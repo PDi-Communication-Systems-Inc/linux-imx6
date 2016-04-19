@@ -25,6 +25,48 @@
 		reg = <0x10000000 0x40000000>;
 	};
 
+        gpio-keys {
+                compatible = "gpio-keys";
+
+                power-button {
+                        label = "Power Button";
+                        gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
+                        linux,code = <116>; /* KEY_POWER */
+                        gpio-key,wakeup;
+                };
+
+                arrow-up-tv {
+                        label = "Arrow Up TV";
+                        gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
+                        linux,code = <186>; /* KEY_F16 */
+                };  
+
+                volume-up-aio {
+                        label = "Volume Up AIO";
+                        gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
+                        linux,code = <115>; /* KEY_VOLUMEUP */
+                }; 
+
+                volume-down-tv {
+                        label = "Volume Down TV";
+                        gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+                        linux,code = <187>; /* KEY_F17 */
+                }; 
+
+                volume-down-aio {
+                        label = "Volume Down AIO";
+                        gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+                        linux,code = <114>; /* KEY_VOLUMEDOWN */
+                };  
+
+                arrow-left-tv {
+                        label = "Arrow Left TV";
+                        gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
+                        linux,code = <188>; /* KEY_F18 */
+                }; 
+ 
+        }; 
+
 	regulators {
 		compatible = "simple-bus";
 
