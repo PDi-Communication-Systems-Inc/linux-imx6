@@ -327,6 +327,7 @@
         atmel@4a {
                 compatible = "atmel,maxtouch";
                 reg = <0x4a>;
+		interrupt-parent = <&gpio6>;
                 interrupts = <&gpio6 8 1>; 
         };  
 
