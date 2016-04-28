@@ -30,7 +30,7 @@
 
                 power-button {
                         label = "Power Button";
-                        gpios = <&gpio2 0 GPIO_ACTIVE_HIGH>;
+                        gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
                         linux,code = <116>; /* KEY_POWER */
                         gpio-key,wakeup;
                 };
