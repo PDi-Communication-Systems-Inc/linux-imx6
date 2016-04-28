@@ -344,14 +344,14 @@
 	pinctrl_hog: hoggrp {
 			fsl,pins = <
 				/* map the Digital IO Connectors on CN5 to NANDF PAD on imx.6 */
-				MX6QDL_PAD_NANDF_D0__GPIO2_IO00 0x80000000
-                                MX6QDL_PAD_NANDF_D1__GPIO2_IO01 0x80000000
-                                MX6QDL_PAD_NANDF_D2__GPIO2_IO02 0x80000000
-                                MX6QDL_PAD_NANDF_D3__GPIO2_IO03 0x80000000
-                                MX6QDL_PAD_NANDF_D4__GPIO2_IO04 0x80000000
-                                MX6QDL_PAD_NANDF_D5__GPIO2_IO05 0x80000000
-                                MX6QDL_PAD_NANDF_D6__GPIO2_IO06 0x80000000
-                                MX6QDL_PAD_NANDF_D7__GPIO2_IO07 0x80000000
+				MX6QDL_PAD_NANDF_D0__GPIO2_IO00 0x80000000       /* AR6MX_TV_POWER_REQ -- TTL_DI0 */
+                                MX6QDL_PAD_NANDF_D1__GPIO2_IO01 0x80000000       /* AR6MX_TV_ARROW_UP -- TTL_DI1 */
+                                MX6QDL_PAD_NANDF_D2__GPIO2_IO02 0x80000000       /* AR6MX_TV_ARROW_DOWN -- TTL_DI2 */
+                                MX6QDL_PAD_NANDF_D3__GPIO2_IO03 0x80000000       /* AR6MX_TV_ARROW_LEFT -- TTL_DI3 */
+                                MX6QDL_PAD_NANDF_D4__GPIO2_IO04 0x80000000       /* TTL_DI4 */
+                                MX6QDL_PAD_NANDF_D5__GPIO2_IO05 0x80000000       /* AR6MX_TV_OR_AIO -- TTL_DI5 */
+                                MX6QDL_PAD_NANDF_D6__GPIO2_IO06 0x80000000       /* AR6MX_ANDROID_PWRSTATE -- TTL_DO0 */
+                                MX6QDL_PAD_NANDF_D7__GPIO2_IO07 0x80000000       /* AR6MX_INTERNAL_SPK_ENABLE -- TTL_DO1 */
 
 				MX6QDL_PAD_DISP0_DAT19__GPIO5_IO13  0x80000000   /* USBV1_EN   */
 				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14  0x80000000   /* USBV2_EN   */
@@ -362,7 +362,6 @@
 				MX6QDL_PAD_GPIO_16__GPIO7_IO11      0x80000000   /* PCIE ENABLE */
 				MX6QDL_PAD_GPIO_17__GPIO7_IO12      0x80000000   /* PCIE RST */
 				MX6QDL_PAD_GPIO_7__GPIO1_IO07       0x80000000   /* OTG_PW_EN */
-				MX6QDL_PAD_NANDF_D6__GPIO2_IO06     0x80000000   /* ANDROID_PWR_STATE */
 				MX6QDL_PAD_CSI0_DAT14__GPIO6_IO00   0x80000000   /* CSI_PWN */
 				MX6QDL_PAD_NANDF_ALE__GPIO6_IO08    0x80000000   /* CAP_TCH_INT0 */
 				MX6QDL_PAD_CSI0_MCLK__CCM_CLKO1     0x130b0
