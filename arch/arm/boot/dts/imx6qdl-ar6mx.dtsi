@@ -30,7 +30,7 @@
 
                 power-button {
                         label = "Power Button";
-                        gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
+                        gpios = <&gpio2 0 GPIO_ACTIVE_HIGH>;
                         linux,code = <116>; /* KEY_POWER */
                         gpio-key,wakeup;
                 };
@@ -41,23 +41,12 @@
                         linux,code = <186>; /* KEY_F16 */
                 };  
 
-                volume-up-aio {
-                        label = "Volume Up AIO";
-                        gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
-                        linux,code = <115>; /* KEY_VOLUMEUP */
-                }; 
 
                 volume-down-tv {
                         label = "Volume Down TV";
                         gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
                         linux,code = <187>; /* KEY_F17 */
                 }; 
-
-                volume-down-aio {
-                        label = "Volume Down AIO";
-                        gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
-                        linux,code = <114>; /* KEY_VOLUMEDOWN */
-                };  
 
                 arrow-left-tv {
                         label = "Arrow Left TV";
@@ -328,7 +317,7 @@
                 compatible = "atmel,maxtouch";
                 reg = <0x4a>;
 		interrupt-parent = <&gpio6>;
-                interrupts = <&gpio6 8 1>; 
+                interrupts = <&gpio6 8 GPIO_ACTIVE_LOW>; 
         };  
 
 };
@@ -354,6 +343,16 @@
 	imx6-ar6mx {
 	pinctrl_hog: hoggrp {
 			fsl,pins = <
+				/* map the Digital IO Connectors on CN5 to NANDF PAD on imx.6 */
+				MX6QDL_PAD_NANDF_D0__GPIO2_IO00 0x80000000
+                                MX6QDL_PAD_NANDF_D1__GPIO2_IO01 0x80000000
+                                MX6QDL_PAD_NANDF_D2__GPIO2_IO02 0x80000000
+                                MX6QDL_PAD_NANDF_D3__GPIO2_IO03 0x80000000
+                                MX6QDL_PAD_NANDF_D4__GPIO2_IO04 0x80000000
+                                MX6QDL_PAD_NANDF_D5__GPIO2_IO05 0x80000000
+                                MX6QDL_PAD_NANDF_D6__GPIO2_IO06 0x80000000
+                                MX6QDL_PAD_NANDF_D7__GPIO2_IO07 0x80000000
+
 				MX6QDL_PAD_DISP0_DAT19__GPIO5_IO13  0x80000000   /* USBV1_EN   */
 				MX6QDL_PAD_DISP0_DAT20__GPIO5_IO14  0x80000000   /* USBV2_EN   */
 				MX6QDL_PAD_SD3_DAT5__GPIO7_IO00     0x80000000   /* SD3_CD   */
