@@ -32,6 +32,9 @@
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/mach/map.h>
 
+/* PDi -- mrobbeloth added include statements */
+#include <linux/gpio.h> 
+
 #include "common.h"
 #include "hardware.h"
 
@@ -120,6 +123,10 @@
 #define QSPI_LUTKEY_VALUE	0x5AF05AF0
 #define QSPI_LCKER_LOCK		0x1
 #define QSPI_LCKER_UNLOCK	0x2
+
+/* PDi mrobbeloth added defines here */
+#define AR6MX_TTL_DO0             IMX_GPIO_NR(2, 6)
+#define AR6MX_ANDROID_PWRSTATE    AR6MX_TTL_DO0
 
 enum qspi_regs_valuetype {
 	QSPI_PREDEFINED,
@@ -480,6 +487,12 @@ static int imx6_suspend_finish(unsigned long val)
 	ttbr1 = save_ttbr1();
 	suspend_in_iram_fn(suspend_iram_base, iram_paddr, cpu_type);
 	restore_ttbr1(ttbr1);
+
+	/* PDi mrobbeloth -- bring DO0 high for wake */
+	pr_warn("Trying to set AR6MX_ANDROID_PWRSTATE\n");
+        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 1);
+        mdelay(1);
+
 	return 0;
 }
 
@@ -547,6 +560,10 @@ static int imx6_pm_enter(suspend_state_t state)
 {
 	struct regmap *g;
 	unsigned int console_saved_reg[11] = {0};
+	
+	/* PDi mrobbeloth -- drop DO0 low for sleep */
+        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 0);
+        mdelay(1);
 
 	if (imx_src_is_m4_enabled()) {
 		if (imx_gpc_is_m4_sleeping() && m4_freq_low) {
@@ -870,4 +887,11 @@ Please ensure device tree has an entry fsl,lpm-sram\n");
 			WARN_ON(!qspi_base);
 		}
 	}
+
+	/*PDi -- mrobbeloth -- set up AR6MX_ANDROID_PWRSTATE */
+	gpio_request(AR6MX_ANDROID_PWRSTATE, "android_power_state");
+	gpio_direction_output(AR6MX_ANDROID_PWRSTATE, 1);
+        gpio_export(AR6MX_ANDROID_PWRSTATE, true);
+	gpio_set_value(AR6MX_ANDROID_PWRSTATE, 1);
+
 }
