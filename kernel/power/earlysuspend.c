@@ -15,12 +15,19 @@
 
 #include <linux/earlysuspend.h>
 #include <linux/module.h>
+#include <linux/gpio.h>         // JTS - needed for gpio_set_value()
 #include <linux/mutex.h>
 #include <linux/rtc.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
+#include <linux/delay.h> /* msleep */
+#include <linux/syscalls.h> /* sys_sync */
 
 #include "power.h"
+
+// {JTS 7/10/2013 - from board-mx6q_ar6mx.c
+#define AR6MX_TTL_DO0             IMX_GPIO_NR(2, 6)
+#define AR6MX_ANDROID_PWRSTATE    AR6MX_TTL_DO0
 
 enum {
 	DEBUG_USER_STATE = 1U << 0,
@@ -75,6 +82,9 @@ static void early_suspend(struct work_struct *work)
 	struct early_suspend *pos;
 	unsigned long irqflags;
 	int abort = 0;
+
+        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 0);      // JTS - 7/9/2013 drop DO0 low for sleep
+        mdelay(1);
 
 	mutex_lock(&early_suspend_lock);
 	spin_lock_irqsave(&state_lock, irqflags);
@@ -139,6 +149,10 @@ static void late_resume(struct work_struct *work)
 			pos->resume(pos);
 		}
 	}
+
+        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 1);      // JTS - 7/9/2013 bring DO0 high for wake 
+        mdelay(1);
+
 	if (debug_mask & DEBUG_SUSPEND)
 		pr_info("late_resume: done\n");
 abort:
