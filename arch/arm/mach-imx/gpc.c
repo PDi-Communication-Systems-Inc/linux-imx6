@@ -24,9 +24,6 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 
-/* PDi -- mrobbeloth added include statements */
-#include <linux/gpio.h> 
-
 #include "common.h"
 #include "hardware.h"
 
@@ -66,10 +63,6 @@
 #define GPC_M4_LPSR_M4_SLEEP_HOLD_ACK_SHIFT	1
 
 #define IMR_NUM			4
-
-/* PDi mrobbeloth added defines here */
-#define AR6MX_TTL_DO0             IMX_GPIO_NR(2, 6)
-#define AR6MX_ANDROID_PWRSTATE    AR6MX_TTL_DO0
 
 static DEFINE_SPINLOCK(gpc_lock);
 static void __iomem *gpc_base;
@@ -292,10 +285,6 @@ void imx_gpc_post_resume(void)
 		writel_relaxed(gpc_saved_imrs[i], reg_imr1 + i * 4);
 
 	imx_gpc_dispmix_on();
-
-	/* Alternative path for resuming from sleep */
-        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 1);
-        mdelay(1);
 }
 
 static int imx_gpc_irq_set_wake(struct irq_data *d, unsigned int on)

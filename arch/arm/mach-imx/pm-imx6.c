@@ -488,11 +488,6 @@ static int imx6_suspend_finish(unsigned long val)
 	suspend_in_iram_fn(suspend_iram_base, iram_paddr, cpu_type);
 	restore_ttbr1(ttbr1);
 
-	/* PDi mrobbeloth -- bring DO0 high for wake */
-	pr_warn("Trying to set AR6MX_ANDROID_PWRSTATE\n");
-        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 1);
-        mdelay(1);
-
 	return 0;
 }
 
@@ -561,10 +556,6 @@ static int imx6_pm_enter(suspend_state_t state)
 	struct regmap *g;
 	unsigned int console_saved_reg[11] = {0};
 	
-	/* PDi mrobbeloth -- drop DO0 low for sleep */
-        gpio_set_value(AR6MX_ANDROID_PWRSTATE, 0);
-        mdelay(1);
-
 	if (imx_src_is_m4_enabled()) {
 		if (imx_gpc_is_m4_sleeping() && m4_freq_low) {
 			imx_gpc_hold_m4_in_sleep();
@@ -606,6 +597,7 @@ static int imx6_pm_enter(suspend_state_t state)
 
 	switch (state) {
 	case PM_SUSPEND_STANDBY:
+		pr_info("imx6_pm_enter(): Entering standby suspend\n");
 		imx6_set_lpm(STOP_POWER_ON);
 		imx6_set_cache_lpm_in_wait(true);
 		imx_gpc_pre_suspend(false);
@@ -619,6 +611,7 @@ static int imx6_pm_enter(suspend_state_t state)
 		imx6_set_lpm(WAIT_CLOCKED);
 		break;
 	case PM_SUSPEND_MEM:
+		pr_info("imx6_pm_enter(): Entering mem suspend\n");
 		imx6_enable_wb(true);
 		imx6_set_cache_lpm_in_wait(false);
 		imx6_set_lpm(STOP_POWER_OFF);
@@ -889,6 +882,7 @@ Please ensure device tree has an entry fsl,lpm-sram\n");
 	}
 
 	/*PDi -- mrobbeloth -- set up AR6MX_ANDROID_PWRSTATE */
+        pr_info("Setting up AR6MX_ANDROID_PWRSTATE\n");
 	gpio_request(AR6MX_ANDROID_PWRSTATE, "android_power_state");
 	gpio_direction_output(AR6MX_ANDROID_PWRSTATE, 1);
         gpio_export(AR6MX_ANDROID_PWRSTATE, true);

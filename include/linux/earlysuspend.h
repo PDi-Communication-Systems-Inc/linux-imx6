@@ -49,6 +49,10 @@ struct early_suspend {
 #ifdef CONFIG_HAS_EARLYSUSPEND
 void register_early_suspend(struct early_suspend *handler);
 void unregister_early_suspend(struct early_suspend *handler);
+
+/* PDi mrobbeloth -- to avoid implicit declartion warning as error */
+#define IMX_GPIO_NR(port, index)		((((port)-1)*32)+((index)&31))
+
 #else
 #define register_early_suspend(handler) do { } while (0)
 #define unregister_early_suspend(handler) do { } while (0)

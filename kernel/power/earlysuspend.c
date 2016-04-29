@@ -15,13 +15,13 @@
 
 #include <linux/earlysuspend.h>
 #include <linux/module.h>
-#include <linux/gpio.h>         // JTS - needed for gpio_set_value()
 #include <linux/mutex.h>
 #include <linux/rtc.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 #include <linux/delay.h> /* msleep */
 #include <linux/syscalls.h> /* sys_sync */
+#include <linux/gpio.h>
 
 #include "power.h"
 
