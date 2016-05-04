@@ -317,7 +317,7 @@
                 compatible = "atmel,maxtouch";
                 reg = <0x4a>;
 		interrupt-parent = <&gpio6>;
-                interrupts = <&gpio6 8 GPIO_ACTIVE_LOW>; 
+                interrupts = <8 GPIO_ACTIVE_LOW>; 
         };  
 
 };
