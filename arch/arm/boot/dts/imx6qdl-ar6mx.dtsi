@@ -8,6 +8,8 @@
  *
  */
 
+#include <dt-bindings/interrupt-controller/irq.h>
+
 /{
 	aliases {
 		mxcfb0 = &mxcfb1;
@@ -317,7 +319,7 @@
                 compatible = "atmel,maxtouch";
                 reg = <0x4a>;
 		interrupt-parent = <&gpio6>;
-                interrupts = <8 GPIO_ACTIVE_LOW>; 
+                interrupts = <8 IRQ_TYPE_LEVEL_LOW>; 
         };  
 
 };
