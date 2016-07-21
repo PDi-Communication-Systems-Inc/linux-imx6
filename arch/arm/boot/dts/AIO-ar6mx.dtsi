@@ -9,8 +9,8 @@
                         gpio-key,wakeup;
                 };  
 
-                arrow-up-tv {
-                        label = "Arrow Up TV";
+                volume-up-tv {
+                        label = "Volume Up TV";
                         gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
                         linux,code = <115>; /* KEY_VOLUMEUP */
                 };  
