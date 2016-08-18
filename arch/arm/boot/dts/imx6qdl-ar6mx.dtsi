@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "AIO-ar6mx.dtsi"
+#include "TV_or_TAB-ar6mx.dtsi"
 
 /{
 	aliases {
@@ -535,7 +535,7 @@
 	vbus-supply = <&reg_usb_otg_vbus>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg_1>;
-	dr_mode = "host";
+	dr_mode = "otg";
 	disable-over-current;
 	status = "okay";
 };
