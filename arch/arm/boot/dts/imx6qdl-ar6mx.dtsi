@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "AIO-ar6mx.dtsi"
+#include "TV_or_TAB-ar6mx.dtsi"
 
 /{
 	aliases {
@@ -256,7 +256,7 @@
 
 	ov5640_mipi: ov5640_mipi@3c { /* i2c1 driver */
 		compatible = "ovti,ov5640_mipi";
-		reg = <0x3c>;
+		reg = <0x2c>;
 		clocks = <&clks 201>;
 		clock-names = "csi_mclk";
 		DOVDD-supply = <&reg_1p8v>; /* 1.8v */
@@ -479,7 +479,7 @@
 	ipu_id = <0>;
 	csi_id = <0>;
 	v_channel = <0>;
-	lanes = <2>;
+	lanes = <4>;
 	status = "okay";
 };
 
