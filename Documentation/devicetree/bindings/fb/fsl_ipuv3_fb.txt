@@ -39,6 +39,7 @@ Required properties for fb:
 	UYVY		IPU_PIX_FMT_UYVY
 	YVYV		IPU_PIX_FMT_YVYU
 	VYUY		IPU_PIX_FMT_VYUY
+        LVDS666         IPU_PIX_FMT_LVDS666
 
 Required properties for display:
 - compatible : should be "fsl,lcd" for lcd panel

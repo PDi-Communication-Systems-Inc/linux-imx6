@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "TV_or_TAB-ar6mx.dtsi"
+#include "AIO-ar6mx.dtsi"
 
 /{
 	aliases {
@@ -112,7 +112,7 @@
 	mxcfb1: fb@0 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
-		interface_pix_fmt = "RGB24";
+		interface_pix_fmt = "LVDS666";
 		mode_str ="1366x768M@60";
 		default_bpp = <32>;
 		int_clk = <0>;
