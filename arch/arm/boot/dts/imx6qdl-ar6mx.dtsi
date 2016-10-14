@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "TV_or_TAB-ar6mx.dtsi"
+#include "AIO-ar6mx.dtsi"
 
 /{
 	aliases {
