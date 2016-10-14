@@ -994,6 +994,12 @@ fec_restart(struct net_device *ndev, int duplex)
 		writel(0x0, fep->hwp + FEC_X_CNTRL);
 	}
 
+#ifdef FEC_FTRL
+	/* Fix from Boundary Devices applied by JTS 8/15/2016 */
+	/* fec: stop the "rcv is not +last, " error messages */
+	/* https://github.com/boundarydevices/linux-imx6/commit/49fe4550243cd04f4f734dcc56bd262628cdc9dc */
+	writel(PKT_MAXBUF_SIZE, fep->hwp + FEC_FTRL);
+#endif
 	fep->full_duplex = duplex;
 
 	/* Set MII speed */
