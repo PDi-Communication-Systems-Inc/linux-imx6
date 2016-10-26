@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright 2004-2014 Freescale Semiconductor, Inc. All Rights Reserved.
  */
 
 /*
@@ -134,6 +134,17 @@ typedef struct _cam_data {
 	int rot_enc_buf_size[2];
 	enum v4l2_buf_type type;
 
+	#define MAX_INTERNAL_BUFFERS 16
+	#define INTERNAL_FRAME_SIZE (1920*1080*2)
+
+	unsigned int fmt_in;	/* Input sensor format */
+	unsigned int fmt_out;	/* V4l2 output format for deinterlaced frame */
+	int frame_delay;
+	int frame_out_cnt;
+	/* Internal buffers */
+	volatile int internal_frame_idx;	/* index into internal_frames. Free frame index */
+	struct mxc_v4l_frame internal_frames[MAX_INTERNAL_BUFFERS];
+
 	/* still image capture */
 	wait_queue_head_t still_queue;
 	int still_counter;
@@ -183,7 +194,8 @@ typedef struct _cam_data {
 	struct v4l2_rect crop_defrect;
 	struct v4l2_rect crop_current;
 
-	int (*enc_update_eba) (void *private, dma_addr_t eba);
+	int (*enc_update_eba) (struct ipu_soc *ipu, dma_addr_t eba,
+			       int *bufferNum);
 	int (*enc_enable) (void *private);
 	int (*enc_disable) (void *private);
 	int (*enc_enable_csi) (void *private);
