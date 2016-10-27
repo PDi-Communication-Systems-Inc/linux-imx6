@@ -38,6 +38,55 @@
  */
 extern struct mxc_v4l_frame * mxc_get_internal_frame(cam_data *cam);
 extern struct mxc_v4l_frame * mxc_get_Nth_frame(cam_data *cam,int delta);
+int g_dump_flag=0;
+static void NXP_dump_ipu_task(struct ipu_task *t)
+{
+    pr_err("====== ipu task ======\n");
+    pr_err("input:\n");
+    pr_err("\tforamt: 0x%x\n", t->input.format);
+    pr_err("\twidth: %d\n", t->input.width);
+    pr_err("\theight: %d\n", t->input.height);
+    pr_err("\tcrop.w = %d\n", t->input.crop.w);
+    pr_err("\tcrop.h = %d\n", t->input.crop.h);
+    pr_err("\tcrop.pos.x = %d\n", t->input.crop.pos.x);
+    pr_err("\tcrop.pos.y = %d\n", t->input.crop.pos.y);
+    pr_err("\tinput.paddr_n = %x\n", t->input.paddr_n);
+    pr_err("\tinput.paddr = %x\n", t->input.paddr);
+
+    if (t->input.deinterlace.enable) {
+        pr_err("deinterlace enabled with:\n");
+        if (t->input.deinterlace.motion != HIGH_MOTION)
+            pr_err("\tlow/medium motion\n");
+        else
+            pr_err("\thigh motion\n");
+    }
+    pr_err("output:\n");
+    pr_err("\tforamt: 0x%x\n", t->output.format);
+    pr_err("\twidth: %d\n", t->output.width);
+    pr_err("\theight: %d\n", t->output.height);
+    pr_err("\troate: %d\n", t->output.rotate);
+    pr_err("\tcrop.w = %d\n", t->output.crop.w);
+    pr_err("\tcrop.h = %d\n", t->output.crop.h);
+    pr_err("\tcrop.pos.x = %d\n", t->output.crop.pos.x);
+    pr_err("\tcrop.pos.y = %d\n", t->output.crop.pos.y);
+    pr_err("\toutput.paddr = %x\n", t->output.paddr);
+    if (t->overlay_en) {
+        pr_err("overlay:\n");
+        pr_err("\tforamt: 0x%x\n", t->overlay.format);
+        pr_err("\twidth: %d\n", t->overlay.width);
+        pr_err("\theight: %d\n", t->overlay.height);
+        pr_err("\tcrop.w = %d\n", t->overlay.crop.w);
+        pr_err("\tcrop.h = %d\n", t->overlay.crop.h);
+        pr_err("\tcrop.pos.x = %d\n", t->overlay.crop.pos.x);
+        pr_err("\tcrop.pos.y = %d\n", t->overlay.crop.pos.y);
+        if (t->overlay.alpha.mode == IPU_ALPHA_MODE_LOCAL)
+            pr_err("combine with local alpha\n");
+        else
+            pr_err("combine with global alpha %d\n", t->overlay.alpha.gvalue);
+        if (t->overlay.colorkey.enable)
+            pr_err("colorkey enabled with 0x%x\n", t->overlay.colorkey.value);
+    }
+}
 
 static void csi_buf_work_func(struct work_struct *work)
 {
@@ -65,19 +114,23 @@ static void csi_buf_work_func(struct work_struct *work)
 		task.input.deinterlace.enable = false;
 
 		task.input.width = CAM_WIDTH;
-		task.input.height = cam->v2f.fmt.pix.height;
-		task.input.format = cam->fmt_in;
+		task.input.height = CAM_HEIGHT;
+		task.input.format = V4L2_PIX_FMT_UYVY;
 
 		task.output.rotate = 0;
 		task.output.width = CAM_WIDTH_NEW;
-		task.output.height = cam->v2f.fmt.pix.height;
-		task.output.format = cam->fmt_out;
+		task.output.height = CAM_HEIGHT;
+		task.output.format = V4L2_PIX_FMT_UYVY;
 
 		/* Parameter validation */
 		err = ipu_check_task(&task);
 		if (err != IPU_CHECK_OK) {
 			pr_err("%s: ipu_check_task failed\n", __func__);
 		} else {
+			if(g_dump_flag<3){
+				NXP_dump_ipu_task(&task);
+				g_dump_flag++;
+			}
 			err = ipu_queue_task(&task);
 			if (err < 0)
 				pr_err("queue ipu task error\n");
@@ -132,6 +185,8 @@ static int csi_enc_setup(cam_data *cam)
 	int ipu_id;
 	int csi_id;
 #endif
+	int width = CAM_WIDTH;
+	int bytesperline = width*2;
 
 	CAMERA_TRACE("In csi_enc_setup\n");
 	if (!cam) {
@@ -225,10 +280,10 @@ static int csi_enc_setup(cam_data *cam)
 	}
 
 #if 1
+	pr_err("NXP Debug pixel_fmt 0x%x \n ",pixel_fmt);
 	pr_err("NXP Debug cam->v2f.fmt.pix.width %d \n ",cam->v2f.fmt.pix.width);
 	pr_err("NXP Debug cam->v2f.fmt.pix.bytesperline %d \n ",cam->v2f.fmt.pix.bytesperline);
-	int width = 1368;
-	int bytesperline = width*2;
+	pr_err("NXP Debug cam->offset.u_offset %d, cam->offset.v_offset %d \n ",cam->offset.u_offset, cam->offset.v_offset);
 	pr_err("NXP Debug Handle stride \n");
 	err = ipu_init_channel_buffer(cam->ipu,
 				      CSI_MEM,
@@ -310,7 +365,7 @@ static int csi_enc_enabling_tasks(void *private)
 	cam_data *cam = (cam_data *) private;
 	int err = 0;
 	CAMERA_TRACE("IPU:In csi_enc_enabling_tasks\n");
-
+	g_dump_flag =0;
 	cam->dummy_frame.vaddress = dma_alloc_coherent(0,
 			       PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
 			       &cam->dummy_frame.paddress,
