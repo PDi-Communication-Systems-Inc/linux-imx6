@@ -42,6 +42,9 @@
 
 #define FRAME_NUM 10
 #define MXC_SENSOR_NUM 2
+#define CAM_WIDTH 1368
+#define CAM_WIDTH_NEW 1376
+#define CAM_HEIGHT	768
 
 enum imx_v4l2_devtype {
 	IMX5_V4L2,
@@ -133,6 +136,17 @@ typedef struct _cam_data {
 	void *rot_enc_bufs_vaddr[2];
 	int rot_enc_buf_size[2];
 	enum v4l2_buf_type type;
+
+	#define MAX_INTERNAL_BUFFERS 16
+	#define INTERNAL_FRAME_SIZE (1920*1080*2)
+
+	unsigned int fmt_in;	/* Input sensor format */
+	unsigned int fmt_out;	/* V4l2 output format for deinterlaced frame */
+	int frame_delay;
+	int frame_out_cnt;
+	/* Internal buffers */
+	volatile int internal_frame_idx;	/* index into internal_frames. Free frame index */
+	struct mxc_v4l_frame internal_frames[MAX_INTERNAL_BUFFERS];
 
 	/* still image capture */
 	wait_queue_head_t still_queue;

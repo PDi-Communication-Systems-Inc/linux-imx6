@@ -36,6 +36,62 @@
 /*
  * Function definitions
  */
+extern struct mxc_v4l_frame * mxc_get_internal_frame(cam_data *cam);
+extern struct mxc_v4l_frame * mxc_get_Nth_frame(cam_data *cam,int delta);
+
+static void csi_buf_work_func(struct work_struct *work)
+{
+	int err;
+	struct mxc_v4l_frame *done_frame;
+	struct mxc_v4l_frame *frame;
+	struct ipu_task	task;
+
+	cam_data *cam =
+			container_of(work, struct _cam_data, csi_work_struct);
+
+	if (!list_empty(&cam->working_q) &&  cam->frame_delay == 0)
+	{
+		done_frame = list_entry(cam->working_q.next,
+				struct mxc_v4l_frame,
+				queue);
+
+		memset(&task, 0, sizeof(task));
+		/* Grab one frame from work queue queue */
+		task.output.paddr = done_frame->buffer.m.offset;
+
+		frame = mxc_get_Nth_frame(cam,-2);
+		task.input.paddr = frame->buffer.m.offset;
+
+		task.input.deinterlace.enable = false;
+
+		task.input.width = CAM_WIDTH;
+		task.input.height = cam->v2f.fmt.pix.height;
+		task.input.format = cam->fmt_in;
+
+		task.output.rotate = 0;
+		task.output.width = CAM_WIDTH_NEW;
+		task.output.height = cam->v2f.fmt.pix.height;
+		task.output.format = cam->fmt_out;
+
+		/* Parameter validation */
+		err = ipu_check_task(&task);
+		if (err != IPU_CHECK_OK) {
+			pr_err("%s: ipu_check_task failed\n", __func__);
+		} else {
+			err = ipu_queue_task(&task);
+			if (err < 0)
+				pr_err("queue ipu task error\n");
+			/* Update required information in application buffer */
+
+		}
+	}
+
+	if ( cam->frame_delay > 0 )
+		cam->frame_delay--;
+
+	cam->enc_callback(0, cam);
+	cam->frame_out_cnt++;
+}
 
 /*!
  * csi ENC callback function.
@@ -52,7 +108,9 @@ static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 	if (cam->enc_callback == NULL)
 		return IRQ_HANDLED;
 
-	cam->enc_callback(irq, dev_id);
+	//cam->enc_callback(irq, dev_id);
+	schedule_work(&cam->csi_work_struct);
+	
 	return IRQ_HANDLED;
 }
 
@@ -166,6 +224,23 @@ static int csi_enc_setup(cam_data *cam)
 		return err;
 	}
 
+#if 1
+	pr_err("NXP Debug cam->v2f.fmt.pix.width %d \n ",cam->v2f.fmt.pix.width);
+	pr_err("NXP Debug cam->v2f.fmt.pix.bytesperline %d \n ",cam->v2f.fmt.pix.bytesperline);
+	int width = 1368;
+	int bytesperline = width*2;
+	pr_err("NXP Debug Handle stride \n");
+	err = ipu_init_channel_buffer(cam->ipu,
+				      CSI_MEM,
+				      IPU_OUTPUT_BUFFER,
+				      pixel_fmt, width,
+				      cam->v2f.fmt.pix.height,
+				      bytesperline,
+				      IPU_ROTATE_NONE,
+				      dummy, dummy, 0,
+				      cam->offset.u_offset,
+				      cam->offset.v_offset);
+#else
 	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
 				      pixel_fmt, cam->v2f.fmt.pix.width,
 				      cam->v2f.fmt.pix.height,
@@ -174,6 +249,7 @@ static int csi_enc_setup(cam_data *cam)
 				      dummy, dummy, 0,
 				      cam->offset.u_offset,
 				      cam->offset.v_offset);
+#endif
 	if (err != 0) {
 		printk(KERN_ERR "CSI_MEM output buffer\n");
 		return err;
@@ -248,6 +324,10 @@ static int csi_enc_enabling_tasks(void *private)
 	cam->dummy_frame.buffer.length =
 	    PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage);
 	cam->dummy_frame.buffer.m.offset = cam->dummy_frame.paddress;
+
+	/* Add a work queue */
+	pr_err("NXP debug Register csi_buf_work_func \n");
+	INIT_WORK(&cam->csi_work_struct, csi_buf_work_func);
 
 	ipu_clear_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
 	err = ipu_request_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF,
@@ -338,6 +418,10 @@ static int csi_enc_disable_csi(void *private)
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
 	ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam);
+	
+	pr_err("NXP Debug %s cancle csi_buf_work_func \n", __func__);
+	flush_work(&cam->csi_work_struct);
+	cancel_work_sync(&cam->csi_work_struct);
 
 	return ipu_disable_csi(cam->ipu, cam->csi);
 }

@@ -230,12 +230,12 @@ static struct reg_value ov5640_setting_15fps_VGA_640_480[] = {
 
 static struct ov5640_mode_info ov5640_mode_info_data[2][ov5640_mode_MAX + 1] = {    // JAD was 5
 	{
-		{ov5640_mode_VGA_640_480, SUBSAMPLING, 1368,  768,        // JAD was 640 x 480
+		{ov5640_mode_VGA_640_480, SUBSAMPLING, CAM_WIDTH,  CAM_HEIGHT,        // JAD was 640 x 480
 		ov5640_setting_15fps_VGA_640_480,
 		ARRAY_SIZE(ov5640_setting_15fps_VGA_640_480)},
 	},
 	{
-		{ov5640_mode_VGA_640_480, SUBSAMPLING, 1368,  768,        // JAD was 640 x 480
+		{ov5640_mode_VGA_640_480, SUBSAMPLING, CAM_WIDTH,  CAM_HEIGHT,        // JAD was 640 x 480
 		ov5640_setting_30fps_VGA_640_480,
 		ARRAY_SIZE(ov5640_setting_30fps_VGA_640_480)},
 	},
@@ -476,8 +476,8 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 //                pModeSetting = ov5640_init_setting_30fps_VGA;         // JAD remove
 //                ArySize = ARRAY_SIZE(ov5640_init_setting_30fps_VGA);  // JAD remove   
 
-		  ov5640_data.pix.width  =  1368;   //  JAD was 640
-		  ov5640_data.pix.height =   768;   //  JAD was 480
+		  ov5640_data.pix.width  =  CAM_WIDTH_NEW;   //  JAD was 640
+		  ov5640_data.pix.height =   CAM_HEIGHT;   //  JAD was 480
 //        retval = ov5640_download_firmware(pModeSetting, ArySize);
 		if (retval < 0){
 			goto err;
@@ -836,16 +836,18 @@ static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 				 struct v4l2_frmsizeenum *fsize)
 {
+	pr_err("NXP debug %s fsize->index %d ov5640_data.pix.pixelformat %d \n",__func__,fsize->index, ov5640_data.pix.pixelformat);
+
 	if (fsize->index > ov5640_mode_MAX)
 		return -EINVAL;
 
 	fsize->pixel_format = ov5640_data.pix.pixelformat;
-	fsize->discrete.width =	1368;							    // JAD was 640
+	fsize->discrete.width =	CAM_WIDTH_NEW;							    // JAD was 640
 //	fsize->discrete.width =
 //			max(ov5640_mode_info_data[0][fsize->index].width,
 //			    ov5640_mode_info_data[1][fsize->index].width);
 //	fsize->discrete.height = 
-    fsize->discrete.height =  768;							    // JAD was 480
+    fsize->discrete.height =  CAM_HEIGHT;							    // JAD was 480
 //			max(ov5640_mode_info_data[0][fsize->index].height,
 //			    ov5640_mode_info_data[1][fsize->index].height);
 	return 0;
@@ -1067,8 +1069,8 @@ static int ov5640_probe(struct i2c_client *client,
 	ov5640_data.i2c_client = client;
 	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
 	                                                     // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
-	ov5640_data.pix.width  = 1368;                       // JAD was 640
-	ov5640_data.pix.height =  768;                       // JAD was 480
+	ov5640_data.pix.width  = CAM_WIDTH_NEW;                       // JAD was 640
+	ov5640_data.pix.height =  CAM_HEIGHT;                       // JAD was 480
 	ov5640_data.streamcap.capability = V4L2_MODE_HIGHQUALITY |
 					                   V4L2_CAP_TIMEPERFRAME;
 	ov5640_data.streamcap.capturemode = 0;               // JAD was 1
