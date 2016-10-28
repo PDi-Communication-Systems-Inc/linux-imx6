@@ -115,12 +115,12 @@ static void csi_buf_work_func(struct work_struct *work)
 
 		task.input.width = CAM_WIDTH;
 		task.input.height = CAM_HEIGHT;
-		task.input.format = V4L2_PIX_FMT_UYVY;
+		task.input.format = cam->fmt_in;
 
 		task.output.rotate = 0;
 		task.output.width = CAM_WIDTH_NEW;
 		task.output.height = CAM_HEIGHT;
-		task.output.format = V4L2_PIX_FMT_UYVY;
+		task.output.format = cam->fmt_out;
 
 		/* Parameter validation */
 		err = ipu_check_task(&task);
@@ -128,6 +128,7 @@ static void csi_buf_work_func(struct work_struct *work)
 			pr_err("%s: ipu_check_task failed\n", __func__);
 		} else {
 			if(g_dump_flag<3){
+				pr_err("NXP debug cam->fmt_in 0x%x cam->fmt_out 0x%x \n",cam->fmt_in, cam->fmt_out);
 				NXP_dump_ipu_task(&task);
 				g_dump_flag++;
 			}
@@ -279,15 +280,13 @@ static int csi_enc_setup(cam_data *cam)
 		return err;
 	}
 
-#if 1
 	pr_err("NXP Debug pixel_fmt 0x%x \n ",pixel_fmt);
 	pr_err("NXP Debug cam->v2f.fmt.pix.width %d \n ",cam->v2f.fmt.pix.width);
 	pr_err("NXP Debug cam->v2f.fmt.pix.bytesperline %d \n ",cam->v2f.fmt.pix.bytesperline);
 	pr_err("NXP Debug cam->offset.u_offset %d, cam->offset.v_offset %d \n ",cam->offset.u_offset, cam->offset.v_offset);
 	pr_err("NXP Debug Handle stride \n");
-	err = ipu_init_channel_buffer(cam->ipu,
-				      CSI_MEM,
-				      IPU_OUTPUT_BUFFER,
+	bytesperline = 	(cam->v2f.fmt.pix.bytesperline*width)/cam->v2f.fmt.pix.width;
+	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
 				      pixel_fmt, width,
 				      cam->v2f.fmt.pix.height,
 				      bytesperline,
@@ -295,16 +294,6 @@ static int csi_enc_setup(cam_data *cam)
 				      dummy, dummy, 0,
 				      cam->offset.u_offset,
 				      cam->offset.v_offset);
-#else
-	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
-				      pixel_fmt, cam->v2f.fmt.pix.width,
-				      cam->v2f.fmt.pix.height,
-				      cam->v2f.fmt.pix.bytesperline,
-				      IPU_ROTATE_NONE,
-				      dummy, dummy, 0,
-				      cam->offset.u_offset,
-				      cam->offset.v_offset);
-#endif
 	if (err != 0) {
 		printk(KERN_ERR "CSI_MEM output buffer\n");
 		return err;

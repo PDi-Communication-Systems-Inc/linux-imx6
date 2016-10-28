@@ -1006,6 +1006,9 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 		retval = -EINVAL;
 	}
 
+	cam->fmt_in  = f->fmt.pix.pixelformat;
+	cam->fmt_out = f->fmt.pix.pixelformat;
+
 	pr_debug("End of %s: v2f pix widthxheight %d x %d\n",
 		 __func__,
 		 cam->v2f.fmt.pix.width, cam->v2f.fmt.pix.height);
@@ -2879,8 +2882,9 @@ static int init_camera_struct(cam_data *cam, struct platform_device *pdev)
 	cam->self->type = v4l2_int_type_master;
 	cam->self->u.master = &mxc_v4l2_master;
 	pr_err("NXP debug %s \n",__func__);
-	cam->fmt_in  = IPU_PIX_FMT_UYVY;
-	cam->fmt_out = IPU_PIX_FMT_UYVY;
+	/* TO do */
+//	cam->fmt_in  = IPU_PIX_FMT_UYVY;
+//	cam->fmt_out = IPU_PIX_FMT_UYVY;
 	cam->frame_out_cnt = 0;
 	g_callback_count = 0;
 
