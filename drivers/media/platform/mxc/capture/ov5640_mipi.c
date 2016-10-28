@@ -836,8 +836,9 @@ static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 				 struct v4l2_frmsizeenum *fsize)
 {
+#ifdef NXPDEBUG
 	pr_err("NXP debug %s fsize->index %d ov5640_data.pix.pixelformat %d \n",__func__,fsize->index, ov5640_data.pix.pixelformat);
-
+#endif
 	if (fsize->index > ov5640_mode_MAX)
 		return -EINVAL;
 

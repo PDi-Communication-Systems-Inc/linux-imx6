@@ -267,9 +267,10 @@ static int mxc_allocate_frame_buf(cam_data *cam, int count)
 
 	pr_debug("In MVC:mxc_allocate_frame_buf - size=%d\n",
 		cam->v2f.fmt.pix.sizeimage);
-
+#ifdef NXPDEBUG
 	pr_err("NXP debug %s count=%d width=%d sizeimage=%d \n",
 			__func__,count, cam->v2f.fmt.pix.width, cam->v2f.fmt.pix.sizeimage);
+#endif
 
 	for (i = 0; i < count; i++) {
 		cam->frame[i].vaddress =
@@ -921,54 +922,74 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 
 		switch (f->fmt.pix.pixelformat) {
 		case V4L2_PIX_FMT_RGB565:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_RGB565 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 2;
 			bytesperline = f->fmt.pix.width * 2;
 			break;
 		case V4L2_PIX_FMT_BGR24:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_BGR24 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 3;
 			bytesperline = f->fmt.pix.width * 3;
 			break;
 		case V4L2_PIX_FMT_RGB24:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_RGB24 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 3;
 			bytesperline = f->fmt.pix.width * 3;
 			break;
 		case V4L2_PIX_FMT_BGR32:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_BGR32 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 4;
 			bytesperline = f->fmt.pix.width * 4;
 			break;
 		case V4L2_PIX_FMT_RGB32:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_RGB32 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 4;
 			bytesperline = f->fmt.pix.width * 4;
 			break;
 		case V4L2_PIX_FMT_YUV422P:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_YUV422P \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 2;
 			bytesperline = f->fmt.pix.width;
 			break;
 		case V4L2_PIX_FMT_UYVY:
 		case V4L2_PIX_FMT_YUYV:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_UYVY \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 2;
 			bytesperline = f->fmt.pix.width * 2;
 			break;
 		case V4L2_PIX_FMT_YUV420:
 		case V4L2_PIX_FMT_YVU420:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_YUV420 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 3 / 2;
 			bytesperline = f->fmt.pix.width;
 			break;
 		case V4L2_PIX_FMT_NV12:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s V4L2_PIX_FMT_NV12 \n",__func__);
+#endif
 			size = f->fmt.pix.width * f->fmt.pix.height * 3 / 2;
 			bytesperline = f->fmt.pix.width;
 			break;
 		default:
+#ifdef NXPDEBUG
 			pr_err("NXP Debug %s default \n",__func__);
+#endif
 			break;
 		}
 
@@ -982,10 +1003,11 @@ static int mxc_v4l2_s_fmt(cam_data *cam, struct v4l2_format *f)
 		else
 			size = f->fmt.pix.sizeimage;
 
+#ifdef NXPDEBUG
 		pr_err("NXP Debug %s sizeimage=%d bytesperline=%d\n",
 			__func__,f->fmt.pix.sizeimage,f->fmt.pix.bytesperline);
 		pr_err("NXP Debug %s pixelformat=%x\n",__func__,f->fmt.pix.pixelformat);
-
+#endif
 		cam->v2f.fmt.pix = f->fmt.pix;
 
 		if (cam->v2f.fmt.pix.priv != 0) {
@@ -1347,7 +1369,7 @@ static int _mxc_v4l_alloc_internal_frames(cam_data *cam)
 {
 	int i;
 
-	pr_err("NXP debug %s \n",__func__);
+//	pr_err("NXP debug %s \n",__func__);
 	/* Fill internal ready queue
 	 * Allocate N buffers of max dimension internally
 	 */
@@ -1829,7 +1851,7 @@ static int mxc_v4l_open(struct file *file)
 		vidioc_int_s_power(cam->sensor, 1);
 		vidioc_int_init(cam->sensor);
 		vidioc_int_dev_init(cam->sensor);
-		pr_err("NXP Debug %s reset pointer \n",__func__);
+//		pr_err("NXP Debug %s reset pointer \n",__func__);
 		for (i=0; i<MAX_INTERNAL_BUFFERS; i++) {
 			cam->internal_frames[i].vaddress = 0;
 		}
@@ -1858,7 +1880,7 @@ static int mxc_v4l_close(struct file *file)
 	struct sensor_data *sensor;
 	pr_debug("In MVC:mxc_v4l_close\n");
 
-	pr_err("NXP Debug %s g_callback_count=%d\n",__func__,g_callback_count);
+//	pr_err("NXP Debug %s g_callback_count=%d\n",__func__,g_callback_count);
 
 	if (!cam) {
 		pr_err("ERROR: v4l2 capture: Internal error, "
@@ -1917,7 +1939,7 @@ static int mxc_v4l_close(struct file *file)
 		cam->enc_counter++;
 	}
 
-	pr_err("NXP Debug %s Release internal buffer \n",__func__);
+//	pr_err("NXP Debug %s Release internal buffer \n",__func__);
 	/* Release internal buffers */
 	for (i = 0; i < MAX_INTERNAL_BUFFERS; i+=2) {
 		if (cam->internal_frames[i].vaddress != 0) {
@@ -2461,7 +2483,7 @@ static long mxc_v4l_do_ioctl(struct file *file,
 		int *index = arg;
 		pr_debug("   case VIDIOC_S_INPUT\n");
 
-		pr_err("NXP Debug %s VIDIOC_S_INPUT current=%d new=%d\n",__func__,cam->current_input,*index );
+//		pr_err("NXP Debug %s VIDIOC_S_INPUT current=%d new=%d\n",__func__,cam->current_input,*index );
 		if (*index >= MXC_V4L2_CAPTURE_NUM_INPUTS) {
 			retval = -EINVAL;
 			break;
@@ -2688,8 +2710,9 @@ static void camera_callback(u32 mask, void *dev)
 		return;
 
 	pr_debug("In MVC:camera_callback\n");
+#ifdef NXPDEBUG
 	pr_err("NXP Debug %s g_callback_count %d \n",__func__, g_callback_count);
-
+#endif
 	g_callback_count++;
 
 	spin_lock(&cam->queue_int_lock);
@@ -2881,7 +2904,9 @@ static int init_camera_struct(cam_data *cam, struct platform_device *pdev)
 	sprintf(cam->self->name, "mxc_v4l2_cap%d", cam->csi);
 	cam->self->type = v4l2_int_type_master;
 	cam->self->u.master = &mxc_v4l2_master;
+#ifdef NXPDEBUG
 	pr_err("NXP debug %s \n",__func__);
+#endif
 	/* TO do */
 //	cam->fmt_in  = IPU_PIX_FMT_UYVY;
 //	cam->fmt_out = IPU_PIX_FMT_UYVY;

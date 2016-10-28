@@ -127,11 +127,13 @@ static void csi_buf_work_func(struct work_struct *work)
 		if (err != IPU_CHECK_OK) {
 			pr_err("%s: ipu_check_task failed\n", __func__);
 		} else {
+#ifdef NXPDEBUG
 			if(g_dump_flag<3){
 				pr_err("NXP debug cam->fmt_in 0x%x cam->fmt_out 0x%x \n",cam->fmt_in, cam->fmt_out);
 				NXP_dump_ipu_task(&task);
 				g_dump_flag++;
 			}
+#endif
 			err = ipu_queue_task(&task);
 			if (err < 0)
 				pr_err("queue ipu task error\n");
@@ -279,12 +281,13 @@ static int csi_enc_setup(cam_data *cam)
 		printk(KERN_ERR "ipu_init_channel %d\n", err);
 		return err;
 	}
-
+#ifdef NXPDEBUG
 	pr_err("NXP Debug pixel_fmt 0x%x \n ",pixel_fmt);
 	pr_err("NXP Debug cam->v2f.fmt.pix.width %d \n ",cam->v2f.fmt.pix.width);
 	pr_err("NXP Debug cam->v2f.fmt.pix.bytesperline %d \n ",cam->v2f.fmt.pix.bytesperline);
 	pr_err("NXP Debug cam->offset.u_offset %d, cam->offset.v_offset %d \n ",cam->offset.u_offset, cam->offset.v_offset);
 	pr_err("NXP Debug Handle stride \n");
+#endif
 	bytesperline = 	(cam->v2f.fmt.pix.bytesperline*width)/cam->v2f.fmt.pix.width;
 	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
 				      pixel_fmt, width,
@@ -370,7 +373,7 @@ static int csi_enc_enabling_tasks(void *private)
 	cam->dummy_frame.buffer.m.offset = cam->dummy_frame.paddress;
 
 	/* Add a work queue */
-	pr_err("NXP debug Register csi_buf_work_func \n");
+//	pr_err("NXP debug Register csi_buf_work_func \n");
 	INIT_WORK(&cam->csi_work_struct, csi_buf_work_func);
 
 	ipu_clear_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
@@ -463,7 +466,7 @@ static int csi_enc_disable_csi(void *private)
 	 * it requests eof irq again */
 	ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam);
 	
-	pr_err("NXP Debug %s cancle csi_buf_work_func \n", __func__);
+//	pr_err("NXP Debug %s cancle csi_buf_work_func \n", __func__);
 	flush_work(&cam->csi_work_struct);
 	cancel_work_sync(&cam->csi_work_struct);
 
