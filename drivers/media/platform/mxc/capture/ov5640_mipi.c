@@ -37,8 +37,8 @@
 #include "mxc_v4l2_capture.h"
 
 #define MIN_FPS 15
-#define MAX_FPS 30			                 // JAD was 30
-#define DEFAULT_FPS 30		                 // JAD was 30
+#define MAX_FPS 60			                 // JAD was 30
+#define DEFAULT_FPS 60		                 // JAD was 30
 
 #define OV5640_XCLK_MIN 6000000
 #define OV5640_XCLK_MAX 24000000             // JAD was 24000000
@@ -78,13 +78,15 @@ enum ov5640_mode {
 };
 enum ov5640_frame_rate {
 	ov5640_15_fps,
-	ov5640_30_fps
+	ov5640_30_fps,
+	ov5640_60_fps
 };
 
 static int ov5640_framerates[] = {
 	[ov5640_15_fps] = 15,
 	[ov5640_30_fps] = 30,
-};
+	[ov5640_60_fps] = 60
+	};
 
 /* image size under 1280 * 960 are SUBSAMPLING
  * image size upper 1280 * 960 are SCALING
@@ -505,6 +507,9 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 		/* dump the first nine frames: 1/30*9 */
 		msec_wait4stable = 300;                         // JAD was 300
 
+	} else if (frame_rate == ov5640_60_fps) {           // JAD was 30 fps
+		/* dump the first nine frames: 1/30*9 */
+		msec_wait4stable = 150;                         // JAD was 300
 	}
 	msleep(msec_wait4stable);
 
@@ -672,6 +677,8 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 			frame_rate = ov5640_15_fps;
 		else if (tgt_fps == 30)
 			frame_rate = ov5640_30_fps;
+		else if (tgt_fps == 60)
+			frame_rate = ov5640_60_fps;
 		else {
 			pr_err(" The camera frame rate is not supported!\n");
 			return -EINVAL;
@@ -926,14 +933,17 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	tgt_fps = sensor->streamcap.timeperframe.denominator /   // JAD
 		  sensor->streamcap.timeperframe.numerator;          // JAD
 
+    tgt_fps = 60;                                            // JAD
 	if (tgt_fps == 15)
 		frame_rate = ov5640_15_fps;
 	else if (tgt_fps == 30)
 		frame_rate = ov5640_30_fps;
+	else if (tgt_fps == 60)
+		frame_rate = ov5640_60_fps;
 	else
 		return -EINVAL; /* Only support 15fps or 30fps now. */
 
-	frame_rate = ov5640_30_fps;                              // JAD - force FPS
+	pr_err("++++  Frame Rate is %d ", frame_rate);            // JAD - show
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* enable mipi csi2 */
