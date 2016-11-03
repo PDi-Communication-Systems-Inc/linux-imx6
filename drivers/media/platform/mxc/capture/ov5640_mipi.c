@@ -660,7 +660,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 
 		tgt_fps = timeperframe->denominator /
 			  timeperframe->numerator;
-
+		pr_err("NXP debug tgt_fps %d \n",tgt_fps);
 		if (tgt_fps > MAX_FPS) {
 			timeperframe->denominator = MAX_FPS;
 			timeperframe->numerator = 1;

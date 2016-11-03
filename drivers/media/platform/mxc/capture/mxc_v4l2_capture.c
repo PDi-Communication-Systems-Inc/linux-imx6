@@ -1460,6 +1460,7 @@ static int mxc_v4l2_s_param(cam_data *cam, struct v4l2_streamparm *parm)
 	parm_fps = parm->parm.capture.timeperframe.denominator
 			/ parm->parm.capture.timeperframe.numerator;
 
+    pr_err("NXP Debug current_fps %d param_fps %d \n",current_fps, parm_fps);
 	pr_debug("   Current capabilities are %x\n",
 			currentparm.parm.capture.capability);
 	pr_debug("   Current capturemode is %d  change to %d\n",
