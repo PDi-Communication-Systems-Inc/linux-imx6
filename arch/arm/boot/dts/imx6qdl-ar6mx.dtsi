@@ -112,7 +112,7 @@
 	mxcfb1: fb@0 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
-		interface_pix_fmt = "RGB24";
+		interface_pix_fmt = "LVDS666";    //JAD was RGB24,  LVDS666 for 18-bit
 		mode_str ="1366x768M@60";
 		default_bpp = <32>;
 		int_clk = <0>;
@@ -123,7 +123,7 @@
 	mxcfb2: fb@1 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "hdmi";
-		interface_pix_fmt = "RGB24";
+		interface_pix_fmt = "LVDS666";    //JAD was RGB24,  LVDS666 for 18-bit
 		mode_str ="1280x720M@60";
 		default_bpp = <32>;
 		int_clk = <0>;

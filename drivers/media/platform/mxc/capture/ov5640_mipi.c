@@ -435,8 +435,8 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	u32 mipi_reg, msec_wait4stable = 0;
 	enum ov5640_downsize_mode dn_mode, orig_dn_mode;
 
-	pr_err ("\n>>>> ov5640_init_mode: build date = %s %s", __DATE__, __TIME__);
-	pr_err ("\n>>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i", frame_rate, mode, orig_mode,"\n");
+	pr_err (">>>> ov5640_init_mode: build date = %s %s \n", __DATE__, __TIME__);
+	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
     pModeSetting = ub940_init_setting;         			        // JAD New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // JAD
@@ -654,8 +654,8 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 		/* Check that the new frame rate is allowed. */
 		if ((timeperframe->numerator == 0) ||
 		    (timeperframe->denominator == 0)) {
-			timeperframe ->denominator = DEFAULT_FPS;
-			timeperframe ->numerator = 1;
+			timeperframe->denominator = DEFAULT_FPS;
+			timeperframe->numerator = 1;
 		}
 
 		tgt_fps = timeperframe->denominator /
