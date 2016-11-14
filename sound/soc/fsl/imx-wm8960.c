@@ -158,7 +158,7 @@ static const struct snd_soc_dapm_widget imx_wm8960_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
 	SND_SOC_DAPM_SPK("Ext Spk", NULL),
 	SND_SOC_DAPM_MIC("AMIC", NULL),
-	SND_SOC_DAPM_MIC("DMIC", NULL),
+	//SND_SOC_DAPM_MIC("DMIC", NULL),
 };
 
 static int imx_hifi_startup(struct snd_pcm_substream *substream)
@@ -287,7 +287,7 @@ static int imx_wm8960_gpio_init(struct snd_soc_pcm_runtime *rtd)
 	struct imx_priv *priv = &card_priv;
 
 	priv->codec = codec;
-
+/*
 	if (gpio_is_valid(priv->hp_gpio)) {
 		imx_hp_jack_gpio.gpio = priv->hp_gpio;
 		imx_hp_jack_gpio.jack_status_check = hpjack_status_check;
@@ -307,7 +307,7 @@ static int imx_wm8960_gpio_init(struct snd_soc_pcm_runtime *rtd)
 				ARRAY_SIZE(imx_mic_jack_pins), imx_mic_jack_pins);
 		snd_soc_jack_add_gpios(&imx_mic_jack, 1, &imx_mic_jack_gpio);
 	}
-
+*/
 	return 0;
 }
 
@@ -443,12 +443,12 @@ static int imx_wm8960_probe(struct platform_device *pdev)
 		goto fail;
 	}
 	clk_prepare(data->codec_mclk);
-
+/*
 	priv->hp_gpio = of_get_named_gpio_flags(np, "hp-det-gpios", 0,
 				(enum of_gpio_flags *)&priv->hp_active_low);
 	priv->mic_gpio = of_get_named_gpio_flags(np, "mic-det-gpios", 0,
 				(enum of_gpio_flags *)&priv->mic_active_low);
-
+*/
 	data->dai.name = "HiFi";
 	data->dai.stream_name = "HiFi";
 	data->dai.codec_dai_name = "wm8960-hifi";
