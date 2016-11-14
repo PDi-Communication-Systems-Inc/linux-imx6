@@ -1016,6 +1016,8 @@ static int wm8960_probe(struct snd_soc_codec *codec)
     snd_soc_write(codec, WM8960_IFACE2, reg | 0x40);
     reg = snd_soc_read(codec, WM8960_ADDCTL2);
     snd_soc_write(codec, WM8960_ADDCTL2, reg | 0x4);
+    /* Mic only connects to left channel, route it for right channel */
+    snd_soc_update_bits(codec, WM8960_ADDCTL1, 3<<2, 1<<2);
 
 	snd_soc_add_codec_controls(codec, wm8960_snd_controls,
 				     ARRAY_SIZE(wm8960_snd_controls));
