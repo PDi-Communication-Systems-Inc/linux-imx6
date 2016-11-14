@@ -972,6 +972,7 @@ static int wm8960_probe(struct snd_soc_codec *codec)
 	struct wm8960_priv *wm8960 = snd_soc_codec_get_drvdata(codec);
 	struct wm8960_data *pdata = dev_get_platdata(codec->dev);
 	int ret;
+    u16 reg;
 
 	wm8960->set_bias_level = wm8960_set_bias_level_out3;
 
@@ -1009,6 +1010,12 @@ static int wm8960_probe(struct snd_soc_codec *codec)
 	snd_soc_update_bits(codec, WM8960_ROUT2, 0x100, 0x100);
 	snd_soc_update_bits(codec, WM8960_LOUTMIX, 0x100, 0x100);
 	snd_soc_update_bits(codec, WM8960_ROUTMIX, 0x100, 0x100);
+
+    /* Set ADCLRC to GPIO1, use DACLRC for both DAC and ADC */
+    reg = snd_soc_read(codec, WM8960_IFACE2);
+    snd_soc_write(codec, WM8960_IFACE2, reg | 0x40);
+    reg = snd_soc_read(codec, WM8960_ADDCTL2);
+    snd_soc_write(codec, WM8960_ADDCTL2, reg | 0x4);
 
 	snd_soc_add_codec_controls(codec, wm8960_snd_controls,
 				     ARRAY_SIZE(wm8960_snd_controls));
