@@ -114,7 +114,7 @@
 		disp_dev = "ldb";
 		interface_pix_fmt = "LVDS666";    //JAD was RGB24,  LVDS666 for 18-bit
 		mode_str ="1366x768M@60";
-		default_bpp = <32>;
+		default_bpp = <18>;               //JAD was 32  -- tried 32 and 18
 		int_clk = <0>;
 		late_init = <0>;
 		status = "disabled";
@@ -125,7 +125,7 @@
 		disp_dev = "hdmi";
 		interface_pix_fmt = "LVDS666";    //JAD was RGB24,  LVDS666 for 18-bit
 		mode_str ="1280x720M@60";
-		default_bpp = <32>;
+		default_bpp = <18>;
 		int_clk = <0>;
 		late_init = <0>;
 		status = "disabled";
@@ -134,9 +134,9 @@
 	mxcfb3: fb@2 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "lcd";
-		interface_pix_fmt = "RGB565";
+		interface_pix_fmt = "LVDS666";
 		mode_str ="CLAA-WVGA";
-		default_bpp = <16>;
+		default_bpp = <18>;
 		int_clk = <0>;
 		late_init = <0>;
 		status = "disabled";
@@ -145,9 +145,9 @@
 	mxcfb4: fb@3 {
 		compatible = "fsl,mxc_sdc_fb";
 		disp_dev = "ldb";
-		interface_pix_fmt = "RGB666";
+		interface_pix_fmt = "LVDS666";
 		mode_str ="LDB-XGA";
-		default_bpp = <16>;
+		default_bpp = <18>;
 		int_clk = <0>;
 		late_init = <0>;
 		status = "disabled";
