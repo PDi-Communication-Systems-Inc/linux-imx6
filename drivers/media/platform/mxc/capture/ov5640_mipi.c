@@ -476,7 +476,7 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 //                pModeSetting = ov5640_init_setting_30fps_VGA;         // JAD remove
 //                ArySize = ARRAY_SIZE(ov5640_init_setting_30fps_VGA);  // JAD remove   
 
-		  ov5640_data.pix.width  =  1368;   //  JAD was 640
+		  ov5640_data.pix.width  =  FOR_ANDROID_WIDTH;   //  JAD was 640
 		  ov5640_data.pix.height =   768;   //  JAD was 480
 //        retval = ov5640_download_firmware(pModeSetting, ArySize);
 		if (retval < 0){
@@ -840,7 +840,7 @@ static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 		return -EINVAL;
 
 	fsize->pixel_format = ov5640_data.pix.pixelformat;
-	fsize->discrete.width =	1368;							    // JAD was 640
+	fsize->discrete.width =	FOR_ANDROID_WIDTH;							    // JAD was 640
 //	fsize->discrete.width =
 //			max(ov5640_mode_info_data[0][fsize->index].width,
 //			    ov5640_mode_info_data[1][fsize->index].width);
@@ -1067,7 +1067,7 @@ static int ov5640_probe(struct i2c_client *client,
 	ov5640_data.i2c_client = client;
 	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
 	                                                     // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
-	ov5640_data.pix.width  = 1368;                       // JAD was 640
+	ov5640_data.pix.width  = FOR_ANDROID_WIDTH;                       // JAD was 640
 	ov5640_data.pix.height =  768;                       // JAD was 480
 	ov5640_data.streamcap.capability = V4L2_MODE_HIGHQUALITY |
 					                   V4L2_CAP_TIMEPERFRAME;

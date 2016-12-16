@@ -1399,12 +1399,12 @@ static int mxc_v4l2_s_param(cam_data *cam, struct v4l2_streamparm *parm)
 	/* This essentially loses the data at the left and bottom of the image
 	 * giving a digital zoom image, if crop_current is less than the full
 	 * size of the image. */
-	ipu_csi_set_window_size(cam->ipu, cam->crop_current.width,
+	ipu_csi_set_window_size(cam->ipu, UB940_WIDTH/*cam->crop_current.width*/,
 				cam->crop_current.height, cam->csi);
 	ipu_csi_set_window_pos(cam->ipu, cam->crop_current.left,
 			       cam->crop_current.top,
 			       cam->csi);
-	ipu_csi_init_interface(cam->ipu, cam->crop_bounds.width,
+	ipu_csi_init_interface(cam->ipu, UB940_WIDTH/*cam->crop_bounds.width*/,
 			       cam->crop_bounds.height,
 			       cam_fmt.fmt.pix.pixelformat, csi_param);
 
