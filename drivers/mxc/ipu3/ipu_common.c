@@ -434,6 +434,9 @@ static int ipu_probe(struct platform_device *pdev)
 		|| !ipu->vdi_reg)
 		return -ENOMEM;
 
+//	pr_err("++++  %s Line: %i, IPU CM Regs   = %d = 0x%08X\n", __FUNCTION__, __LINE__, ipu->cm_reg);       //JAD
+//	pr_err("++++  %s Line: %i, IPU CSI0 Regs = %d = 0x%08X\n", __FUNCTION__, __LINE__, ipu->csi_reg[0]);   //JAD
+//	pr_err("++++  %s Line: %i, IPU CSI1 Regs = %d = 0x%08X\n", __FUNCTION__, __LINE__, ipu->csi_reg[1]);   //JAD
 	dev_dbg(ipu->dev, "IPU CM Regs = %p\n", ipu->cm_reg);
 	dev_dbg(ipu->dev, "IPU IC Regs = %p\n", ipu->ic_reg);
 	dev_dbg(ipu->dev, "IPU IDMAC Regs = %p\n", ipu->idmac_reg);
@@ -2599,6 +2602,8 @@ static irqreturn_t ipu_err_irq_handler(int irq, void *desc)
 					~int_stat;
 			ipu_cm_write(ipu, int_stat, IPU_INT_CTRL(err_reg[i]));
 		}
+//	pr_err("++++  %s Line: %i, IPU_INT_STAT(err_reg[%i]): 0x%08X\n", __FUNCTION__, __LINE__, i, IPU_INT_STAT(err_reg[i]));       //JAD
+//	pr_err("++++  %s Line: %i, IPU_INT_CTRL(err_reg[%i]): 0x%08X\n", __FUNCTION__, __LINE__, i, IPU_INT_CTRL(err_reg[i]));       //JAD
 	}
 
 	spin_unlock(&ipu->int_reg_spin_lock);
@@ -2692,8 +2697,14 @@ void ipu_clear_irq(struct ipu_soc *ipu, uint32_t irq)
 	_ipu_get(ipu);
 
 	spin_lock_irqsave(&ipu->int_reg_spin_lock, lock_flags);
-
+	
+//    pr_err("^^^^  %s Line: %i, IPUIRQ_2_STATREG(irq): 0x%08X\n",
+//           	__FUNCTION__, __LINE__, IPUIRQ_2_STATREG(irq));       //JAD
+			
 	ipu_cm_write(ipu, IPUIRQ_2_MASK(irq), IPUIRQ_2_STATREG(irq));
+
+//	pr_err("^^^^  %s Line: %i, IPUIRQ_2_STATREG(irq): 0x%08X\n",
+//           	__FUNCTION__, __LINE__, IPUIRQ_2_STATREG(irq));       //JAD
 
 	spin_unlock_irqrestore(&ipu->int_reg_spin_lock, lock_flags);
 

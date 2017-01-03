@@ -27,11 +27,76 @@
 #include "mxc_v4l2_capture.h"
 #include "ipu_prp_sw.h"
 
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/kprobes.h>
+#include <linux/ktime.h>
+#include <linux/limits.h>
+#include <linux/sched.h>
+#include <linux/math64.h>
+
+ktime_t start, last;
+s64 total_time;
+unsigned int no_of_frame;
+int irq_start;
+int measure_in_ms;
+
 #ifdef CAMERA_DBG
 	#define CAMERA_TRACE(x) (printk)x
 #else
 	#define CAMERA_TRACE(x)
 #endif
+
+/*
+ * FPS Measurement APIs
+ */
+static void dbg_show_in_fps()
+{
+	s64 temp_time;
+	s64 rem;
+
+	temp_time = no_of_frame;
+	if (measure_in_ms)
+		temp_time = temp_time * MSEC_PER_SEC;
+	else
+		temp_time = temp_time * NSEC_PER_SEC;
+
+	rem = div64_ul(temp_time, total_time);
+
+	pr_err("#### ipu_csi_enc::NXP Total F:%d, IN@ %lld fps\n",
+			no_of_frame, rem);
+}
+
+static void dbg_measure_in_fps()
+{
+	s64 actual_time;
+	ktime_t end;
+
+	no_of_frame++;
+	if (!irq_start) {
+		last = start = ktime_get();
+		irq_start = 1;
+//	    pr_err("&&&&  %s Line: %i, CSI_IRQ Started\n",
+//                        		__FUNCTION__, __LINE__);       //JAD
+		return;
+	}
+	end = ktime_get();
+	if (measure_in_ms) {
+		/*Measure in MS*/
+		actual_time = ktime_to_ms(ktime_sub(end, last));
+		total_time = ktime_to_ms(ktime_sub(end, start));
+		pr_err("F:%d, IRQ:@ %u ms\n",                            // JAD 
+				no_of_frame, (unsigned int)actual_time);
+	} else {
+		/*Measure in NS*/
+		actual_time = ktime_to_ns(ktime_sub(end, last));
+		total_time = ktime_to_ns(ktime_sub(end, start));
+		pr_err("F:%d, IRQ: @ %lld ns\n",
+				no_of_frame, (long long)actual_time);
+	}
+
+	last = end;
+}
 
 /*
  * Function definitions
@@ -164,6 +229,8 @@ static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 	if (cam->enc_callback == NULL)
 		return IRQ_HANDLED;
 
+	dbg_measure_in_fps();
+
 	//cam->enc_callback(irq, dev_id);
 	schedule_work(&cam->csi_work_struct);
 	
@@ -290,7 +357,7 @@ static int csi_enc_setup(cam_data *cam)
 #endif
 	bytesperline = 	(cam->v2f.fmt.pix.bytesperline*width)/cam->v2f.fmt.pix.width;
 	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
-				      pixel_fmt, width,
+				      pixel_fmt, UB940_WIDTH,                                   // JAD  was width
 				      cam->v2f.fmt.pix.height,
 				      bytesperline,
 				      IPU_ROTATE_NONE,
@@ -448,6 +515,11 @@ static int csi_enc_enable_csi(void *private)
 {
 	cam_data *cam = (cam_data *) private;
 
+	pr_err("++++  %s\n", __func__);
+	irq_start = 0;
+	no_of_frame = 0;
+	measure_in_ms = 1;
+
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
@@ -466,10 +538,12 @@ static int csi_enc_disable_csi(void *private)
 	 * it requests eof irq again */
 	ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam);
 	
-//	pr_err("NXP Debug %s cancle csi_buf_work_func \n", __func__);
+//	pr_err("NXP Debug %s cancel csi_buf_work_func \n", __func__);
 	flush_work(&cam->csi_work_struct);
 	cancel_work_sync(&cam->csi_work_struct);
 
+	pr_err("#### ipu_csi_enc::%s\n", __func__);
+	dbg_show_in_fps();
 	return ipu_disable_csi(cam->ipu, cam->csi);
 }
 

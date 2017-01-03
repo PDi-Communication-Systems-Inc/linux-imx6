@@ -188,6 +188,8 @@ unsigned int mipi_csi2_get_datatype(struct mipi_csi2_info *info)
 	dtype = info->datatype;
 	_mipi_csi2_unlock(info);
 
+//	pr_err("&&&&  %s Line: %i, MIPI_CSI2_DATA_TYPE = %i\n",
+//        	__FUNCTION__, __LINE__, dtype);   //JAD
 	return dtype;
 }
 EXPORT_SYMBOL(mipi_csi2_get_datatype);
@@ -206,6 +208,8 @@ unsigned int mipi_csi2_dphy_status(struct mipi_csi2_info *info)
 	status = mipi_csi2_read(info, MIPI_CSI2_PHY_STATE);
 	_mipi_csi2_unlock(info);
 
+//	pr_err("&&&&  %s Line: %i, MIPI_CSI2_PHY_STATE = 0x%08X\n",
+//        	__FUNCTION__, __LINE__, mipi_csi2_read(info, MIPI_CSI2_PHY_STATE));   //JAD
 	return status;
 }
 EXPORT_SYMBOL(mipi_csi2_dphy_status);

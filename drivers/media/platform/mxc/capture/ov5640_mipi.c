@@ -36,7 +36,7 @@
 #include <media/v4l2-int-device.h>
 #include "mxc_v4l2_capture.h"
 
-#define MIN_FPS 15
+#define MIN_FPS 60                           // JAD was 15
 #define MAX_FPS 60			                 // JAD was 30
 #define DEFAULT_FPS 60		                 // JAD was 30
 
@@ -435,8 +435,8 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	u32 mipi_reg, msec_wait4stable = 0;
 	enum ov5640_downsize_mode dn_mode, orig_dn_mode;
 
-	pr_err (">>>> ov5640_init_mode: build date = %s %s \n", __DATE__, __TIME__);
-	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
+	pr_err (">>>>  %s Line: %i,build date = %s %s \n", __FUNCTION__, __LINE__, __DATE__, __TIME__);
+	pr_err (">>>>  %s Line: %i,frame rate=%i, mode=%i, orig_mode=%i \n", __FUNCTION__, __LINE__, frame_rate, mode, orig_mode);
 
     pModeSetting = ub940_init_setting;         			        // JAD New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // JAD
@@ -478,8 +478,8 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 //                pModeSetting = ov5640_init_setting_30fps_VGA;         // JAD remove
 //                ArySize = ARRAY_SIZE(ov5640_init_setting_30fps_VGA);  // JAD remove   
 
-		  ov5640_data.pix.width  =  CAM_WIDTH_NEW;   //  JAD was 640
-		  ov5640_data.pix.height =   CAM_HEIGHT;   //  JAD was 480
+		  ov5640_data.pix.width  =   FOR_ANDROID_WIDTH;   //  JAD was 640
+		  ov5640_data.pix.height =   CAM_HEIGHT;      //  JAD was 480
 //        retval = ov5640_download_firmware(pModeSetting, ArySize);
 		if (retval < 0){
 			goto err;
@@ -565,7 +565,7 @@ static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
 	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_NOBT_8BIT;      // Was V4L2_IF_TYPE_BT656_MODE_BT_8BIT
 	p->u.bt656.clock_min = OV5640_XCLK_MIN;
 	p->u.bt656.clock_max = OV5640_XCLK_MAX;
-	p->u.bt656.bt_sync_correct = 1;                         /* JAD Indicate external vsync - was 0 */
+	p->u.bt656.bt_sync_correct = 0;                         /* JAD Indicate external vsync - was 0 */
 
 	return 0;
 }
@@ -673,6 +673,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 		tgt_fps = timeperframe->denominator /
 			  timeperframe->numerator;
 
+		tgt_fps = 60;                                 //JAD added
 		if (tgt_fps == 15)
 			frame_rate = ov5640_15_fps;
 		else if (tgt_fps == 30)
@@ -850,7 +851,7 @@ static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 		return -EINVAL;
 
 	fsize->pixel_format = ov5640_data.pix.pixelformat;
-	fsize->discrete.width =	CAM_WIDTH_NEW;							    // JAD was 640
+	fsize->discrete.width =	FOR_ANDROID_WIDTH;							    // JAD was 640
 //	fsize->discrete.width =
 //			max(ov5640_mode_info_data[0][fsize->index].width,
 //			    ov5640_mode_info_data[1][fsize->index].width);
@@ -933,7 +934,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	tgt_fps = sensor->streamcap.timeperframe.denominator /   // JAD
 		  sensor->streamcap.timeperframe.numerator;          // JAD
 
-    tgt_fps = 60;                                            // JAD
+	tgt_fps = 60;                                            // JAD
 	if (tgt_fps == 15)
 		frame_rate = ov5640_15_fps;
 	else if (tgt_fps == 30)
@@ -943,7 +944,9 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	else
 		return -EINVAL; /* Only support 15fps or 30fps now. */
 
-	pr_err("++++  Frame Rate is %d ", frame_rate);            // JAD - show
+	pr_err("++++  %s Line: %i, denominator: %d, numerator: %d", __FUNCTION__, __LINE__,
+           sensor->streamcap.timeperframe.denominator, sensor->streamcap.timeperframe.numerator);       //JAD
+	pr_err("++++  Frame Rate is %d \n", frame_rate);            // JAD - show
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* enable mipi csi2 */
@@ -1041,7 +1044,7 @@ static int ov5640_probe(struct i2c_client *client,
 	int retval;
 	struct fsl_mxc_camera_platform_data *plat_data = client->dev.platform_data;
 
-//	pr_err("%s: >>>>  ov5640 camera probe function");
+	pr_err(">>>>  ov5640_mipi::%s \n", __FUNCTION__);               //JAD
 
 	/* Set initial values for the sensor struct. */
 	memset(&ov5640_data, 0, sizeof(ov5640_data));
@@ -1078,13 +1081,13 @@ static int ov5640_probe(struct i2c_client *client,
 
 //	ov5640_data.io_init = ov5640_reset;
 	ov5640_data.i2c_client = client;
-	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
-	                                                     // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
-	ov5640_data.pix.width  = CAM_WIDTH_NEW;                       // JAD was 640
-	ov5640_data.pix.height =  CAM_HEIGHT;                       // JAD was 480
+	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;          // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
+	                                                          // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
+	ov5640_data.pix.width  = FOR_ANDROID_WIDTH;                   // JAD was 640
+	ov5640_data.pix.height =  CAM_HEIGHT;                     // JAD was 480
 	ov5640_data.streamcap.capability = V4L2_MODE_HIGHQUALITY |
 					                   V4L2_CAP_TIMEPERFRAME;
-	ov5640_data.streamcap.capturemode = 0;               // JAD was 1
+	ov5640_data.streamcap.capturemode = 0;                    // JAD was 1
 	ov5640_data.streamcap.timeperframe.denominator = DEFAULT_FPS;
 	ov5640_data.streamcap.timeperframe.numerator = 1;
 

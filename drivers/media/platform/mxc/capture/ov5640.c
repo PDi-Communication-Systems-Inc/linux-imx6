@@ -62,12 +62,14 @@ enum ov5640_mode {
 
 enum ov5640_frame_rate {
 	ov5640_15_fps,
-	ov5640_30_fps
+	ov5640_30_fps,
+	ov5640_60_fps
 };
 
 static int ov5640_framerates[] = {
 	[ov5640_15_fps] = 15,
 	[ov5640_30_fps] = 30,
+	[ov5640_60_fps] = 60
 };
 
 struct reg_value {
