@@ -41,7 +41,7 @@
 
 
 #define UB940_WIDTH	1366
-#define FOR_ANDROID_WIDTH	1344
+#define FOR_ANDROID_WIDTH	1376
 
 
 #define FRAME_NUM 10
