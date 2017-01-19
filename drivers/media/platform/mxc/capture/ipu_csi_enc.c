@@ -85,14 +85,14 @@ static void dbg_measure_in_fps()
 		/*Measure in MS*/
 		actual_time = ktime_to_ms(ktime_sub(end, last));
 		total_time = ktime_to_ms(ktime_sub(end, start));
-		pr_err("F:%d, IRQ:@ %u ms\n",                            // JAD 
-				no_of_frame, (unsigned int)actual_time);
+//		pr_err("F:%d, IRQ:@ %u ms\n",                            // JAD 
+//				no_of_frame, (unsigned int)actual_time);
 	} else {
 		/*Measure in NS*/
 		actual_time = ktime_to_ns(ktime_sub(end, last));
 		total_time = ktime_to_ns(ktime_sub(end, start));
-		pr_err("F:%d, IRQ: @ %lld ns\n",
-				no_of_frame, (long long)actual_time);
+//		pr_err("F:%d, IRQ: @ %lld ns\n",
+//				no_of_frame, (long long)actual_time);
 	}
 
 	last = end;
