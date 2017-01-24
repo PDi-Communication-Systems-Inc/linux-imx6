@@ -27,15 +27,37 @@
 #include "mxc_v4l2_capture.h"
 #include "ipu_prp_sw.h"
 
+#include <linux/mxcfb.h>
+#include <linux/console.h>
+
 #ifdef CAMERA_DBG
 	#define CAMERA_TRACE(x) (printk)x
 #else
 	#define CAMERA_TRACE(x)
 #endif
 
+static int buffer_num;
+static struct ipu_soc *disp_ipu;
+static struct fb_info *fbi;
+static struct fb_var_screeninfo fbvar;
+static u32 vf_out_format;
+static u32 ub_in_format;
+
 /*
  * Function definitions
  */
+static void directly_display(cam_data *cam)
+{
+	++buffer_num;
+	buffer_num %= 3;
+
+	if (ipu_update_channel_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER,
+			buffer_num, mxc_get_disp_buf(cam, buffer_num)) == 0) {
+		ipu_select_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER, buffer_num);
+	} else {
+		pr_err("ERROR:: error in update FG buff%d\n", buffer_num);
+	}
+}
 
 /*!
  * csi ENC callback function.
@@ -52,7 +74,14 @@ static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 	if (cam->enc_callback == NULL)
 		return IRQ_HANDLED;
 
-	cam->enc_callback(irq, dev_id);
+	if (cam->usefg == 1) {
+		directly_display(cam);
+
+		cam->direct_callback(0, cam);
+		return IRQ_HANDLED;
+	} else {
+		cam->enc_callback(irq, dev_id);
+	}
 	return IRQ_HANDLED;
 }
 
@@ -166,6 +195,8 @@ static int csi_enc_setup(cam_data *cam)
 		return err;
 	}
 
+	ub_in_format = pixel_fmt;
+
 	err = ipu_init_channel_buffer(cam->ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
 				      pixel_fmt, UB940_WIDTH/*cam->v2f.fmt.pix.width*/,
 				      cam->v2f.fmt.pix.height,
@@ -223,6 +254,155 @@ static int csi_enc_eba_update(struct ipu_soc *ipu, dma_addr_t eba,
 	return 0;
 }
 
+static void get_disp_ipu(cam_data *cam)
+{
+		disp_ipu = ipu_get_soc(1); /* using DISP4 */
+}
+
+/*!
+ * foreground_start - start the vf task
+ *
+ * @param private    cam_data * mxc v4l2 main structure
+ *
+ */
+static int foreground_start(void *private)
+{
+	cam_data *cam = (cam_data *) private;
+	int err = 0, i = 0, screen_size;
+	char *base;
+	int bpp;
+
+	if (!cam) {
+		printk(KERN_ERR "private is NULL\n");
+		return -EIO;
+	}
+
+	get_disp_ipu(cam);
+
+	for (i = 0; i < num_registered_fb; i++) {
+		char *idstr = registered_fb[i]->fix.id;
+		if (((strcmp(idstr, "DISP3 FG") == 0)) ||
+		    ((strcmp(idstr, "DISP4 FG") == 0))) {
+			fbi = registered_fb[i];
+			break;
+		}
+	}
+
+	if (fbi == NULL) {
+		printk(KERN_ERR "DISP FG fb not found\n");
+		return -EPERM;
+	}
+
+	fbvar = fbi->var;
+
+	/* Store the overlay frame buffer's original std */
+	cam->fb_origin_std = fbvar.nonstd;
+
+	if (cam->devtype == IMX5_V4L2 || cam->devtype == IMX6_V4L2) {
+		/* Use DP to do CSC so that we can get better performance */
+		if(cam->usefg == 1)
+			vf_out_format = IPU_PIX_FMT_NV12;
+		else
+			vf_out_format = IPU_PIX_FMT_UYVY;
+		fbvar.nonstd = vf_out_format;
+	} else {
+		vf_out_format = IPU_PIX_FMT_RGB565;
+		fbvar.nonstd = 0;
+	}
+
+	if(vf_out_format == IPU_PIX_FMT_NV12)
+		bpp = 12;
+	else
+		bpp = bytes_per_pixel(vf_out_format) * 8;
+
+	fbvar.bits_per_pixel = bpp;
+	fbvar.xres = fbvar.xres_virtual = FOR_ANDROID_WIDTH;
+	fbvar.yres = 768;//cam->win.w.height;
+	fbvar.yres_virtual = 768 * 3;//cam->win.w.height * 3;
+	fbvar.yoffset = 0;
+	fbvar.vmode &= ~FB_VMODE_YWRAP;
+	fbvar.accel_flags = FB_ACCEL_TRIPLE_FLAG;
+	fbvar.activate |= FB_ACTIVATE_FORCE;
+	fb_set_var(fbi, &fbvar);
+
+	ipu_disp_set_window_pos(disp_ipu, MEM_FG_SYNC, cam->win.w.left,
+			cam->win.w.top);
+
+	/* Fill black color for framebuffer */
+	base = (char *) fbi->screen_base;
+	if (cam->devtype == IMX5_V4L2 || cam->devtype == IMX6_V4L2) {
+		for (i = 0; i < fbi->fix.smem_len; i++, base++)
+			*base = 0x80;
+	} else {
+		for (i = 0; i < screen_size * 2; i++, base++)
+			*base = 0x00;
+	}
+	console_lock();
+	fb_blank(fbi, FB_BLANK_UNBLANK);
+	console_unlock();
+
+	cam->disp_phyaddr_0 = fbi->fix.smem_start + (((fbi->fix.line_length * fbvar.yres)
+			+ (fbi->fix.line_length * fbvar.yres)));
+	cam->disp_phyaddr_1 = fbi->fix.smem_start + ((fbi->fix.line_length * fbvar.yres));
+	cam->disp_phyaddr_2 = fbi->fix.smem_start;
+
+	buffer_num = 2;
+
+	/* correct display ch buffer address */
+	ipu_update_channel_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER,
+			0, cam->disp_phyaddr_0);
+	ipu_update_channel_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER,
+			1, cam->disp_phyaddr_1);
+	ipu_update_channel_buffer(disp_ipu, MEM_FG_SYNC, IPU_INPUT_BUFFER,
+			2, cam->disp_phyaddr_2);
+	return err;
+
+}
+
+/*!
+ * foreground_stop - stop the vf task
+ *
+ * @param private    cam_data * mxc v4l2 main structure
+ *
+ */
+static int foreground_stop(void *private)
+{
+	cam_data *cam = (cam_data *) private;
+	int err = 0, i = 0;
+	struct fb_info *fbi = NULL;
+	struct fb_var_screeninfo fbvar;
+
+	/*csi_buffer_num = 0;*/
+	buffer_num = 0;
+
+	for (i = 0; i < num_registered_fb; i++) {
+		char *idstr = registered_fb[i]->fix.id;
+		if (((strcmp(idstr, "DISP3 FG") == 0)) ||
+		    ((strcmp(idstr, "DISP4 FG") == 0))) {
+			fbi = registered_fb[i];
+			break;
+		}
+	}
+
+	if (fbi == NULL) {
+		printk(KERN_ERR "DISP FG fb not found\n");
+		return -EPERM;
+	}
+
+	console_lock();
+	fb_blank(fbi, FB_BLANK_POWERDOWN);
+	console_unlock();
+
+	/* Set the overlay frame buffer std to what it is used to be */
+	fbvar = fbi->var;
+	fbvar.accel_flags = FB_ACCEL_TRIPLE_FLAG;
+	fbvar.nonstd = cam->fb_origin_std;
+	fbvar.activate |= FB_ACTIVATE_FORCE;
+	fb_set_var(fbi, &fbvar);
+	return err;
+}
+
+
 /*!
  * Enable encoder task
  * @param private       struct cam_data * mxc capture instance
@@ -256,6 +436,9 @@ static int csi_enc_enabling_tasks(void *private)
 		printk(KERN_ERR "Error registering rot irq\n");
 		return err;
 	}
+
+	if(cam->usefg)
+		foreground_start(cam);
 
 	err = csi_enc_setup(cam);
 	if (err != 0) {
@@ -292,6 +475,9 @@ static int csi_enc_disabling_tasks(void *private)
 				  cam->dummy_frame.paddress);
 		cam->dummy_frame.vaddress = 0;
 	}
+
+	if(cam->usefg)
+		foreground_stop(cam);
 
 #ifdef CONFIG_MXC_MIPI_CSI2
 	mipi_csi2_info = mipi_csi2_get_info();
