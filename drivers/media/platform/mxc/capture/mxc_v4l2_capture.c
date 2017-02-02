@@ -393,6 +393,18 @@ static inline int valid_mode(u32 palette)
 		(palette == V4L2_PIX_FMT_NV12));
 }
 
+dma_addr_t mxc_get_disp_buf(cam_data *cam, int disp_buf_idx)
+{
+	if (disp_buf_idx == 0) {
+		return cam->disp_phyaddr_0;
+	} else if (disp_buf_idx == 1) {
+		return cam->disp_phyaddr_1;
+	} else {
+		return cam->disp_phyaddr_2;
+	}
+}
+EXPORT_SYMBOL(mxc_get_disp_buf);
+
 /*!
  * Start the encoder job
  *
@@ -462,6 +474,18 @@ static int mxc_streamon(cam_data *cam)
 		err |= cam->enc_update_eba(cam->ipu, frame->buffer.m.offset,
 					   &cam->ping_pong_csi);
 		spin_unlock_irqrestore(&cam->queue_int_lock, lock_flags);
+
+		if (cam->usefg == 1) {
+			/* Get Display Buffer and update CSI EBA */
+			cam->csi_to_disp_buf_idx = 0;
+			err = cam->enc_update_eba(cam->ipu, mxc_get_disp_buf(cam, cam->csi_to_disp_buf_idx),
+					&cam->ping_pong_csi);
+			cam->csi_to_disp_buf_idx++;
+
+			err |= cam->enc_update_eba(cam->ipu, mxc_get_disp_buf(cam, cam->csi_to_disp_buf_idx),
+					&cam->ping_pong_csi);
+			cam->csi_to_disp_buf_idx++;
+		}
 	} else {
 		spin_unlock_irqrestore(&cam->queue_int_lock, lock_flags);
 		return -EINVAL;
@@ -1399,6 +1423,19 @@ static int mxc_v4l2_s_param(cam_data *cam, struct v4l2_streamparm *parm)
 	/* This essentially loses the data at the left and bottom of the image
 	 * giving a digital zoom image, if crop_current is less than the full
 	 * size of the image. */
+	/*pr_err("\n cam->crop_current.width : %d cam->crop_current.height : %d cam->crop_bounds.width : %d cam->crop_bounds.height : %d",
+			cam->crop_current.width,cam->crop_current.height, cam->crop_bounds.width,cam->crop_bounds.height);
+	*/
+	pr_err("%s: ACT_FRM_W:%d, ACT_FRM_H:%d\n", __func__,
+			cam->crop_current.width, cam->crop_current.height);
+
+	pr_err("%s: HSC:%d, VSC:%d\n", __func__,
+			cam->crop_current.left, cam->crop_current.top);
+
+	pr_err("%s: SENS_FRM_W:%d, SENS_FRM_H:%d, pixfmt:0x%x\n", __func__,
+			cam->crop_bounds.width, cam->crop_bounds.height,
+			cam_fmt.fmt.pix.pixelformat);
+
 	ipu_csi_set_window_size(cam->ipu, UB940_WIDTH/*cam->crop_current.width*/,
 				cam->crop_current.height, cam->csi);
 	ipu_csi_set_window_pos(cam->ipu, cam->crop_current.left,
@@ -1927,6 +1964,7 @@ static long mxc_v4l_do_ioctl(struct file *file,
 				    V4L2_CAP_READWRITE;
 		cap->card[0] = '\0';
 		cap->bus_info[0] = '\0';
+		cap->device_caps = cam->usefg;
 		break;
 	}
 
@@ -2524,6 +2562,74 @@ static void camera_platform_release(struct device *device)
 {
 }
 
+static void direct_callback(u32 mask, void *dev)
+{
+	struct mxc_v4l_frame *done_frame;
+	struct mxc_v4l_frame *ready_frame;
+	struct timeval cur_time;
+	int err;
+
+	cam_data *cam = (cam_data *) dev;
+	if (cam == NULL)
+		return;
+
+	pr_debug("In MVC:direct_callback\n");
+
+	// Schedule next buffer for IDMAC
+	err = cam->enc_update_eba(cam->ipu, mxc_get_disp_buf(cam, cam->csi_to_disp_buf_idx),
+			&cam->ping_pong_csi);
+	cam->csi_to_disp_buf_idx++;
+	cam->csi_to_disp_buf_idx %= 3;
+	if ( err < 0 )
+		pr_err("ERROR: Direct Disp:DMA: Channel update error\n");
+
+	spin_lock(&cam->queue_int_lock);
+	spin_lock(&cam->dqueue_int_lock);
+	if (!list_empty(&cam->working_q)) {
+		do_gettimeofday(&cur_time);
+
+		done_frame = list_entry(cam->working_q.next,
+				struct mxc_v4l_frame,
+				queue);
+
+		if (done_frame->ipu_buf_num != cam->local_buf_num)
+			goto next;
+
+		/*
+		 * Set the current time to done frame buffer's
+		 * timestamp. Users can use this information to judge
+		 * the frame's usage.
+		 */
+		done_frame->buffer.timestamp = cur_time;
+
+		if (done_frame->buffer.flags & V4L2_BUF_FLAG_QUEUED) {
+			done_frame->buffer.flags |= V4L2_BUF_FLAG_DONE;
+			done_frame->buffer.flags &= ~V4L2_BUF_FLAG_QUEUED;
+
+			/* Added to the done queue */
+			list_del(cam->working_q.next);
+			list_add_tail(&done_frame->queue, &cam->done_q);
+
+			/* Wake up the queue */
+			cam->enc_counter++;
+			wake_up_interruptible(&cam->enc_queue);
+		}
+	}
+
+next:
+	if (!list_empty(&cam->ready_q)) {
+		ready_frame = list_entry(cam->ready_q.next,
+				struct mxc_v4l_frame,
+				queue);
+		list_del(cam->ready_q.next);
+		list_add_tail(&ready_frame->queue,
+				&cam->working_q);
+		ready_frame->ipu_buf_num = cam->local_buf_num;
+		cam->local_buf_num = (cam->local_buf_num == 0) ? 1 : 0;
+	}
+	spin_unlock(&cam->dqueue_int_lock);
+	spin_unlock(&cam->queue_int_lock);
+}
 /*!
  * Camera V4l2 callback function.
  *
@@ -2720,6 +2826,7 @@ static int init_camera_struct(cam_data *cam, struct platform_device *pdev)
 	cam->mclk_on[cam->mclk_source] = false;
 
 	cam->enc_callback = camera_callback;
+	cam->direct_callback = direct_callback;
 	init_waitqueue_head(&cam->power_queue);
 	spin_lock_init(&cam->queue_int_lock);
 	spin_lock_init(&cam->dqueue_int_lock);
@@ -2772,6 +2879,37 @@ static ssize_t show_csi(struct device *dev,
 }
 static DEVICE_ATTR(fsl_csi_property, S_IRUGO, show_csi, NULL);
 
+static ssize_t show_fg_setting(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct video_device *video_dev = container_of(dev,
+						struct video_device, dev);
+	cam_data *cam = video_get_drvdata(video_dev);
+
+	return sprintf(buf, "Current FG Setting is:%d\n", cam->usefg);
+}
+static ssize_t set_fg_setting(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	int cnt, enable;
+	int err = -EINVAL;
+	struct video_device *video_dev = container_of(dev,
+						struct video_device, dev);
+	cam_data *cam = video_get_drvdata(video_dev);
+
+	cnt = sscanf(buf, "%d", &enable);
+	if (cnt != 1)
+		goto out;
+
+	cam->usefg = enable;
+	return count;
+out:
+	return err;
+}
+
+static DEVICE_ATTR(fsl_fg_property, S_IRWXUGO, show_fg_setting, set_fg_setting);
+
 /*!
  * This function is called to probe the devices if registered.
  *
@@ -2821,6 +2959,11 @@ static int mxc_v4l2_probe(struct platform_device *pdev)
 			&dev_attr_fsl_csi_property))
 		dev_err(&pdev->dev, "Error on creating sysfs file"
 			" for csi number\n");
+
+	if (device_create_file(&cam->video_dev->dev,
+			&dev_attr_fsl_fg_property))
+		dev_err(&pdev->dev, "Error on creating sysfs file"
+			" for FG number\n");
 
 	return 0;
 }

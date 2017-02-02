@@ -159,6 +159,14 @@ typedef struct _cam_data {
 	int fb_origin_std;
 	struct work_struct csi_work_struct;
 
+	/* Disp phy addr */
+	int csi_to_disp_buf_idx;
+	dma_addr_t disp_phyaddr_0;
+	dma_addr_t disp_phyaddr_1;
+	dma_addr_t disp_phyaddr_2;
+	int usefg;
+	void (*direct_callback) (u32 mask, void *dev);
+
 	/* v4l2 format */
 	struct v4l2_format v2f;
 	struct v4l2_format input_fmt;	/* camera in */
@@ -267,4 +275,5 @@ struct sensor_data {
 };
 
 void set_mclk_rate(uint32_t *p_mclk_freq, uint32_t csi);
+dma_addr_t mxc_get_disp_buf(cam_data *cam, int disp_buf_idx);
 #endif				/* __MXC_V4L2_CAPTURE_H__ */
