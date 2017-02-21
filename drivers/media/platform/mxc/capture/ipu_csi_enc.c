@@ -102,18 +102,16 @@ static void dbg_measure_in_fps()
 		/*Measure in MS*/
 		actual_time = ktime_to_ms(ktime_sub(end, last));
 		total_time = ktime_to_ms(ktime_sub(end, start));
-/*
+
 		pr_err("F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
-*/
+
 	} else {
 		/*Measure in NS*/
 		actual_time = ktime_to_ns(ktime_sub(end, last));
 		total_time = ktime_to_ns(ktime_sub(end, start));
-/*
 		pr_err("C==F:%d, IRQ: @ %lld ns\n",
 				no_of_frame, (long long)actual_time);
-*/
 	}
 
 	last = end;
@@ -375,11 +373,40 @@ static int foreground_start(void *private)
 	cam->fb_origin_std = fbvar.nonstd;
 
 	if (cam->devtype == IMX5_V4L2 || cam->devtype == IMX6_V4L2) {
+		if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_YUV420)
+			vf_out_format = IPU_PIX_FMT_YUV420P;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_YVU420)
+			vf_out_format = IPU_PIX_FMT_YVU420P;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_YUV422P)
+			vf_out_format = IPU_PIX_FMT_YUV422P;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_UYVY)
+			vf_out_format = IPU_PIX_FMT_UYVY;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_YUYV)
+			vf_out_format = IPU_PIX_FMT_YUYV;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_NV12)
+			vf_out_format = IPU_PIX_FMT_NV12;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_BGR24)
+			vf_out_format = IPU_PIX_FMT_BGR24;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB24)
+			vf_out_format = IPU_PIX_FMT_RGB24;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB565)
+			vf_out_format = IPU_PIX_FMT_RGB565;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_BGR32)
+			vf_out_format = IPU_PIX_FMT_BGR32;
+		else if (cam->v2f.fmt.pix.pixelformat == V4L2_PIX_FMT_RGB32)
+			vf_out_format = IPU_PIX_FMT_RGB32;
+		else {
+			printk(KERN_ERR "format not supported\n");
+			return -EINVAL;
+		}
+
 		/* Use DP to do CSC so that we can get better performance */
+/*
 		if(cam->usefg == 1)
 			vf_out_format = IPU_PIX_FMT_NV12;
 		else
 			vf_out_format = IPU_PIX_FMT_UYVY;
+*/
 		fbvar.nonstd = vf_out_format;
 	} else {
 		vf_out_format = IPU_PIX_FMT_RGB565;
@@ -585,7 +612,7 @@ static int csi_enc_enable_csi(void *private)
 	pr_err("+++++++++%s\n", __func__);
 	irq_start = 0;
 	no_of_frame = 0;
-	measure_in_ms = 0;
+	measure_in_ms = 1;
 
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
