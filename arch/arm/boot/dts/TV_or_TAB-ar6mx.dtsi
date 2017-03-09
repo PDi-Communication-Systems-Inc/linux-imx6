@@ -7,12 +7,14 @@
                         gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
                         linux,code = <116>; /* KEY_POWER*/
                         gpio-key,wakeup;
+                        linux,input-type=<1>; /* EV_KEY, default, but included for completeness */
                 };  
 
                 arrow-up-tv {
                         label = "Arrow Up TV";
                         gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
                         linux,code = <186>; /* KEY_F16 */
+                        linux,input-type=<0>; /* EV_SYN */
                 };  
 
 
@@ -20,12 +22,14 @@
                         label = "Volume Down TV";
                         gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
                         linux,code = <187>;  /* KEY_F17 */
+                        linux,input-type=<0>; /* EV_SYN */
                 };  
 
                 arrow-left-tv {
                         label = "Arrow Left TV";
                         gpios = <&gpio2 3 GPIO_ACTIVE_LOW>;
                         linux,code = <188>; /* KEY_F18 */
+                        linux,input-type=<0>; /* EV_SYN */
                 };  
 
         };
