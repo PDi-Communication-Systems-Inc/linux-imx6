@@ -7,14 +7,12 @@
                         gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
                         linux,code = <116>; /* KEY_POWER */
                         gpio-key,wakeup;
-                        linux,input-type=<1>; /* EV_KEY, default, but included for completeness */
                 };  
 
                 volume-up-tv {
                         label = "Volume Up TV";
                         gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
                         linux,code = <115>; /* KEY_VOLUMEUP */
-                        linux,input-type=<0>; /* EV_SYN */
                 };  
 
 
@@ -22,7 +20,6 @@
                         label = "Volume Down TV";
                         gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
                         linux,code = <114>; /* KEY_VOLUMEDOWN */
-                        linux,input-type=<0>; /* EV_SYN */
                 };  
 
         };
