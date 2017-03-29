@@ -912,6 +912,25 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	enum ov5640_frame_rate frame_rate;
 	void *mipi_csi2_info;
 
+// ************************ second device *********************
+        // save the original (device 1) address
+        u8 addr1 = ov5640_data.i2c_client->addr;
+
+        // equivalent of "i2cset -f -y 0 0x10 0x4f 0x40"
+
+        // set the client for the second device
+        ov5640_data.i2c_client->addr = 0x10;
+        int ret2 = ub9xx_write_reg(0x4f, 0x40);
+        if(ret2)
+        {
+                printk(KERN_ERR, "device 2 write error: %d\n", ret2);
+                return ret2;
+        }
+
+        // restore the device 1 address
+        ov5640_data.i2c_client->addr = addr1;
+// ********************** end second device *******************
+
 	ov5640_data.on = true;
 
 	/* mclk */
