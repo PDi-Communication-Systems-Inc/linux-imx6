@@ -219,7 +219,7 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 		dev_err(dev, "failed to set codec dai fmt: %d\n", ret);
 		return ret;
 	}
-
+/*
 	pll_out = sample_rate * 256 * 2;
 
 	ret = snd_soc_dai_set_pll(codec_dai, 0, 0,
@@ -228,7 +228,7 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 		dev_err(dev, "failed to start PLL: %d\n", ret);
 		return ret;
 	}
-
+*/
 	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV,
 			WM8960_SYSCLK_DIV_2);
 	if (ret) {
