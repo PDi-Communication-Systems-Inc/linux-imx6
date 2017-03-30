@@ -1,0 +1,26 @@
+/ {
+        gpio-keys {
+                compatible = "gpio-keys";
+
+                power-button {
+                        label = "Power Button";
+                        gpios = <&gpio2 0 GPIO_ACTIVE_LOW>;
+                        linux,code = <116>; /* KEY_POWER */
+                        gpio-key,wakeup;
+                };  
+
+                volume-up-tv {
+                        label = "Volume Up TV";
+                        gpios = <&gpio2 1 GPIO_ACTIVE_LOW>;
+                        linux,code = <115>; /* KEY_VOLUMEUP */
+                };  
+
+
+                volume-down-tv {
+                        label = "Volume Down TV";
+                        gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+                        linux,code = <114>; /* KEY_VOLUMEDOWN */
+                };  
+
+        };
+};
