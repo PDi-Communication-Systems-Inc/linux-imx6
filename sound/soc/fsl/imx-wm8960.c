@@ -187,6 +187,10 @@ static void imx_hifi_shutdown(struct snd_pcm_substream *substream)
 	return;
 }
 
+#ifdef CONFIG_SND_SOC_IMX_WM8960_ANDROID
+static int sample_rate = 44100;
+static snd_pcm_format_t sample_format = SNDRV_PCM_FORMAT_S16_LE;
+
 static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 				     struct snd_pcm_hw_params *params)
 {
@@ -196,10 +200,11 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 	struct device *dev = &priv->pdev->dev;
 	struct snd_soc_card *card = codec_dai->codec->card;
 	struct imx_wm8960_data *data = snd_soc_card_get_drvdata(card);
-	unsigned int sample_rate = params_rate(params);
-	snd_pcm_format_t sample_format = params_format(params);
 	u32 dai_format, pll_out;
 	int ret = 0;
+
+    sample_rate = params_rate(params);
+    sample_format = params_format(params);
 
 	if (!priv->first_stream) {
 		priv->first_stream = substream;
@@ -219,25 +224,130 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 		dev_err(dev, "failed to set codec dai fmt: %d\n", ret);
 		return ret;
 	}
-/*
-	pll_out = sample_rate * 256 * 2;
+	return 0;
+}
 
-	ret = snd_soc_dai_set_pll(codec_dai, 0, 0,
-			clk_get_rate(data->codec_mclk), pll_out);
-	if (ret) {
-		dev_err(dev, "failed to start PLL: %d\n", ret);
-		return ret;
-	}
-*/
-	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV,
-			WM8960_SYSCLK_DIV_2);
-	if (ret) {
-		dev_err(dev, "failed to set SYSCLKDIV: %d\n", ret);
-		return ret;
-	}
+static int imx_wm8960_set_bias_level(struct snd_soc_card *card,
+                    struct snd_soc_dapm_context *dapm,
+                    enum snd_soc_bias_level level)
+{
+    struct snd_soc_dai *codec_dai = card->rtd[0].codec_dai;
+    struct imx_priv *priv = &card_priv;
+    struct imx_wm8960_data *data = snd_soc_card_get_drvdata(card);
+    struct device *dev = &priv->pdev->dev;
+    unsigned int pll_out;
+    int ret;
+
+    if (dapm->dev != codec_dai->dev)
+        return 0;
+
+    switch (level) {
+    case SND_SOC_BIAS_PREPARE:
+        if (dapm->bias_level == SND_SOC_BIAS_STANDBY) {
+            if (sample_format == SNDRV_PCM_FORMAT_S24_LE)
+                pll_out = sample_rate * 384 * 2;
+            else
+                pll_out = sample_rate * 256 * 2;
+
+            ret = snd_soc_dai_set_pll(codec_dai, 0,
+                    0, clk_get_rate(data->codec_mclk),
+                    pll_out);
+            if (ret < 0) {
+                dev_err(dev, "failed to start FLL: %d\n", ret);
+                return ret;
+            }
+
+            ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV,
+                    WM8960_SYSCLK_DIV_2);
+            if (ret < 0) {
+                dev_err(dev, "failed to set SYSCLK: %d\n", ret);
+                return ret;
+            }
+        }
+        break;
+
+    case SND_SOC_BIAS_STANDBY:
+        if (dapm->bias_level == SND_SOC_BIAS_PREPARE) {
+            ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV,
+                    WM8960_SYSCLK_DIV_2);
+            if (ret < 0) {
+                dev_err(dev,
+                    "failed to switch away from FLL: %d\n",
+                    ret);
+                return ret;
+            }
+
+            ret = snd_soc_dai_set_pll(codec_dai, 0,
+                    0, 0, 0);
+            if (ret < 0) {
+                dev_err(dev, "failed to stop FLL: %d\n", ret);
+                return ret;
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
 
 	return 0;
 }
+
+#else
+
+static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
+                     struct snd_pcm_hw_params *params)
+{
+    struct snd_soc_pcm_runtime *rtd = substream->private_data;
+    struct snd_soc_dai *codec_dai = rtd->codec_dai;
+    struct imx_priv *priv = &card_priv;
+    struct device *dev = &priv->pdev->dev;
+    struct snd_soc_card *card = codec_dai->codec->card;
+    struct imx_wm8960_data *data = snd_soc_card_get_drvdata(card);
+    unsigned int sample_rate = params_rate(params);
+    snd_pcm_format_t sample_format = params_format(params);
+    u32 dai_format, pll_out;
+    int ret = 0;
+
+    if (!priv->first_stream) {
+        priv->first_stream = substream;
+    } else {
+        priv->second_stream = substream;
+
+        /* We suppose the two substream are using same params */
+        return 0;
+    }
+
+    dai_format = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
+        SND_SOC_DAIFMT_CBM_CFM;
+
+    /* set codec DAI configuration */
+    ret = snd_soc_dai_set_fmt(codec_dai, dai_format);
+    if (ret) {
+        dev_err(dev, "failed to set codec dai fmt: %d\n", ret);
+        return ret;
+    }
+
+    pll_out = sample_rate * 256 * 2;
+
+    ret = snd_soc_dai_set_pll(codec_dai, 0, 0,
+            clk_get_rate(data->codec_mclk), pll_out);
+    if (ret) {
+        dev_err(dev, "failed to start PLL: %d\n", ret);
+        return ret;
+    }
+
+    ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_SYSCLKDIV,
+            WM8960_SYSCLK_DIV_2);
+    if (ret) {
+        dev_err(dev, "failed to set SYSCLKDIV: %d\n", ret);
+        return ret;
+    }
+
+    return 0;
+}
+
+#endif /* CONFIG_SND_SOC_IMX_WM8960_ANDROID */
 
 static int imx_hifi_hw_free(struct snd_pcm_substream *substream)
 {
