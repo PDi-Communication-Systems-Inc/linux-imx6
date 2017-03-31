@@ -582,7 +582,7 @@ static int imx_wm8960_probe(struct platform_device *pdev)
 	data->card.dapm_widgets = imx_wm8960_dapm_widgets;
 	data->card.num_dapm_widgets = ARRAY_SIZE(imx_wm8960_dapm_widgets);
 
-#ifdef CONFIG_SND_SOC_Imx_WM8960_ANDROID
+#ifdef CONFIG_SND_SOC_IMX_WM8960_ANDROID
     data->card.set_bias_level = imx_wm8960_set_bias_level;
 #endif
 
