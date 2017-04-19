@@ -113,8 +113,8 @@ static void dbg_measure_in_fps()
 
 	}
 
-	if (actual_time > 20) {
-		pr_err("FPS Time was greater than 17mS \n");
+	if (actual_time > 90) {
+		pr_err("FPS Time was greater than 90mS \n");
 		pr_err("F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
 	}

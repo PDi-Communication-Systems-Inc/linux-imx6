@@ -920,7 +920,14 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
         // set the client for the second device
         ov5640_data.i2c_client->addr = 0x10;
-        int ret2 = ub9xx_write_reg(0x4f, 0x40);
+//        int ret2 = ub9xx_write_reg(0x01, 0x02);        // reset 947 part
+//        if(ret2)
+//        {
+//                printk(KERN_ERR, "device 2 write error: %d\n", ret2);
+//                return ret2;
+//        }
+		
+        int ret2 = ub9xx_write_reg(0x4f, 0x40);            // set single pixel mode
         if(ret2)
         {
                 printk(KERN_ERR, "device 2 write error: %d\n", ret2);
