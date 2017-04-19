@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Freescale Semiconductor, Inc. All Rights Reserved.
+ * Copyright 2004-2014 Freescale Semiconductor, Inc. All Rights Reserved.
  */
 
 /*
@@ -38,6 +38,10 @@
 
 #include <media/v4l2-dev.h>
 #include <media/v4l2-int-device.h>
+
+
+#define UB940_WIDTH	1366
+#define FOR_ANDROID_WIDTH	1376
 
 
 #define FRAME_NUM 10
@@ -155,6 +159,14 @@ typedef struct _cam_data {
 	int fb_origin_std;
 	struct work_struct csi_work_struct;
 
+	/* Disp phy addr */
+	int csi_to_disp_buf_idx;
+	dma_addr_t disp_phyaddr_0;
+	dma_addr_t disp_phyaddr_1;
+	dma_addr_t disp_phyaddr_2;
+	int usefg;
+	void (*direct_callback) (u32 mask, void *dev);
+
 	/* v4l2 format */
 	struct v4l2_format v2f;
 	struct v4l2_format input_fmt;	/* camera in */
@@ -183,7 +195,8 @@ typedef struct _cam_data {
 	struct v4l2_rect crop_defrect;
 	struct v4l2_rect crop_current;
 
-	int (*enc_update_eba) (void *private, dma_addr_t eba);
+	int (*enc_update_eba) (struct ipu_soc *ipu, dma_addr_t eba,
+			       int *bufferNum);
 	int (*enc_enable) (void *private);
 	int (*enc_disable) (void *private);
 	int (*enc_enable_csi) (void *private);
@@ -262,4 +275,5 @@ struct sensor_data {
 };
 
 void set_mclk_rate(uint32_t *p_mclk_freq, uint32_t csi);
+dma_addr_t mxc_get_disp_buf(cam_data *cam, int disp_buf_idx);
 #endif				/* __MXC_V4L2_CAPTURE_H__ */
