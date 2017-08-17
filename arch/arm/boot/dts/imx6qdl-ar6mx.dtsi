@@ -466,7 +466,7 @@
                         /* For the AUO G185XW01 panel */
 			ldb_1366x768: SN75LVDS82DGG {
 				/* H-section Period * V-section Period * Frame Rate 
-                                  1606 * 708 * 60 = 77858880 */
+                                  1606 * 808 * 60 = 77858880 */
                                 clock-frequency = <77858880>;
                                 hactive = <1366>;
                                 vactive = <768>;
@@ -491,7 +491,7 @@
                         /* For the AUO G185XW01 panel */
                         ldb_1366x768_2: SN75LVDS82DGG_2 {
                                 /* H-section Period * V-section Period * Frame Rate
-                                  1606 * 708 * 60 = 77858880 */
+                                  1606 * 808 * 60 = 77858880 */
                                 clock-frequency = <77858880>;
                                 hactive = <1366>;
                                 vactive = <768>;
