@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "TV_or_TAB-ar6mx.dtsi"
+#include "AIO-ar6mx.dtsi"
 
 /{
 	aliases {
@@ -301,7 +301,7 @@
 	s35390a: s35390a@30 {
 		compatible = "s35390a";
 		reg = <0x30>;
-        status = "disabled";
+        status = "okay";
 	};
 };
 
