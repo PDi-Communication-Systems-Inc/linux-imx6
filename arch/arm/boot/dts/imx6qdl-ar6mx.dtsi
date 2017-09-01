@@ -155,14 +155,14 @@
 
 	backlight_lvds0 {
 		compatible = "pwm-backlight";
-		pwms = <&pwm1 0 1333333>;                       //JAD - 750Hz not 2KHz
+		pwms = <&pwm1 0 50000>;                           //JAD - 20,000Hz not 750KHz
 		brightness-levels = <0 4 8 16 32 64 128 255>;
 		default-brightness-level = <7>;
 	};
 
 	backlight_lvds1 {
 		compatible = "pwm-backlight";
-		pwms = <&pwm2 0 500000>;
+		pwms = <&pwm2 0 50000>;							//JAD - 20,000Hz not 200Hz
 		brightness-levels = <0 4 8 16 32 64 128 255>;
 		default-brightness-level = <7>;
 	};
