@@ -9,7 +9,7 @@
  */
 
 #include <dt-bindings/interrupt-controller/irq.h>
-#include "AIO-ar6mx.dtsi"
+#include "TV_or_TAB-ar6mx.dtsi"
 
 /{
 	aliases {
@@ -156,15 +156,17 @@
 	backlight_lvds0 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm1 0 50000>;                       //JAD - 20KHz
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <7>;
+		brightness-levels = <16 24 32 40 48 56 64 72 80 88 96 104 112 120 
+                          		128 136 144 152 160 176 192 208 224 240 255>;
+		default-brightness-level = <24>;
 	};
 
 	backlight_lvds1 {
 		compatible = "pwm-backlight";
 		pwms = <&pwm2 0 50000>;						 //JAD - 20KHz
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <7>;
+		brightness-levels = <16 24 32 40 48 56 64 72 80 88 96 104 112 120 
+                          		128 136 144 152 160 176 192 208 224 240 255>;
+		default-brightness-level = <24>;
 	};
 
 	sound {
