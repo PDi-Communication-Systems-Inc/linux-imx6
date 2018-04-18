@@ -1038,8 +1038,6 @@ static int wm8960_remove(struct snd_soc_codec *codec)
 static struct snd_soc_codec_driver soc_codec_dev_wm8960 = {
 	.probe =	wm8960_probe,
 	.remove =	wm8960_remove,
-	.suspend =	wm8960_suspend,
-	.resume =	wm8960_resume,
 	.set_bias_level = wm8960_set_bias_level,
 };
 
