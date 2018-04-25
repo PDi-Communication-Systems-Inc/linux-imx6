@@ -124,7 +124,7 @@ static struct sensor_data ov5640_data;
 static struct reg_value ub940_init_setting[] = {
 
     {0x0001, 0x02, 0, 0},{0x0064, 0x00, 0, 0},                         // Reset the part
-	{0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0}, {0x006d, 0x00, 0, 0},   // Virtual Channel ID=0, YUV422 
+	{0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0}, {0x006d, 0x00, 0, 0},{0x006a, 0x02, 0, 0},   // Virtual Channel ID=0, YUV422 
                                                                        // Set Pattern Generator (indirect Registers)    
 	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, 
 	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0},                        
