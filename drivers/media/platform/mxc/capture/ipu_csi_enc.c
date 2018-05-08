@@ -634,7 +634,7 @@ static int csi_enc_disable_csi(void *private)
 	/* free csi eof irq firstly.
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
-        //ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); //commenting this for test for John
+        ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
 
 	pr_err("#####%s\n", __func__);
 	dbg_show_in_fps();
