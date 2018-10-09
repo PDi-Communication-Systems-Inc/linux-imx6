@@ -57,11 +57,11 @@
  //       ov5640_mode_1080P_1920_1080   = 5,
  //       ov5640_mode_QSXGA_2592_1944   = 6,
  //       ov5640_mode_QCIF_176_144      = 7,
-        ov5640_mode_XGA_1370_768        = 2,  // was ov5640_mode_XGA_1024_768024
-        ov5640_mode_MAX                 = 2,  // was 4
-        ov5640_mode_INIT                = 0xff, /*only for sensor init*/
+        ov5640_mode_XGA_1370_768        = 2,    // was ov5640_mode_XGA_1024_768024
+        ov5640_mode_MAX                 = 2,    // was 4
+        ov5640_mode_INIT                = 0xff, // only for sensor init
 //};
-
+*/
 enum ov5640_mode {
         ov5640_mode_MIN               = 0,
         ov5640_mode_VGA_640_480       = 0,
@@ -69,22 +69,22 @@ enum ov5640_mode {
         ov5640_mode_NTSC_720_480      = 2,
         ov5640_mode_PAL_720_576       = 3,
         ov5640_mode_720P_1280_720     = 4,
-        ov5640_mode_XGA_1368_768024   = 5,  // was ov5640_mode_XGA_1024_768024		
+        ov5640_mode_XGA_1368_768024   = 5,  	// was ov5640_mode_XGA_1024_768024		
         ov5640_mode_1080P_1920_1080   = 6,
         ov5640_mode_QSXGA_2592_1944   = 7,
         ov5640_mode_QCIF_176_144      = 8,
-        ov5640_mode_MAX               = 6,  // was 4
-        ov5640_mode_INIT              = 0xff, /*only for sensor init*/
+        ov5640_mode_MAX               = 6,   	// was 4
+        ov5640_mode_INIT              = 0xff, 	//only for sensor init
 };
 enum ov5640_frame_rate {
 	ov5640_15_fps,
 	ov5640_30_fps
 };
 
-static int ov5640_framerates[] = {
-	[ov5640_15_fps] = 15,
-	[ov5640_30_fps] = 30,
-};
+//static int ov5640_framerates[] = {
+//	[ov5640_15_fps] = 15,
+//	[ov5640_30_fps] = 30,
+//};
 
 /* image size under 1280 * 960 are SUBSAMPLING
  * image size upper 1280 * 960 are SCALING
@@ -109,6 +109,8 @@ struct ov5640_mode_info {
 	struct reg_value *init_data_ptr;
 	u32 init_data_size;
 };
+
+static int rst_gpio;
 
 //
 // Maintains the information on the current state of the sensor.
@@ -153,7 +155,7 @@ static struct reg_value ub940_init_setting[] = {
 	{0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0},  //       
 */
 };
-
+/*
 static struct reg_value ub940_640x480_setting[] = {
     {0x0001, 0x02, 0, 0},                                              // Reset the part
 	{0x006c, 0x2e, 0, 0}, {0x006d, 0x40, 0, 0}, {0x006b, 0x50, 0, 0},  // Virtual Channel ID=1, YUV422 
@@ -217,7 +219,7 @@ static struct reg_value ub940_1360x768_setting[] = {
 	{0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0},  // 
 	
 };
-
+*/
 // Original MIPI Structures
 //static struct reg_value ov5640_init_setting_30fps_VGA[] = {
 //};
@@ -242,7 +244,7 @@ static struct ov5640_mode_info ov5640_mode_info_data[2][ov5640_mode_MAX + 1] = {
 	},
 };
 
-static struct fsl_mxc_camera_platform_data *camera_plat;
+//static struct fsl_mxc_camera_platform_data *camera_plat;
 
 static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
@@ -279,7 +281,7 @@ static s32 ub9xx_write_reg(u16 reg, u8 val)
 	au8Buf   [1] = val;         // JAD was - reg & 0xff
 	au8Buf   [2] = val;         // may be able to get rid of this
 	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {                // JAD was 3
-//		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);             // JAD
+		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);             // JAD
 		return -1;
 	}
 
@@ -297,20 +299,33 @@ static s32 ub9xx_read_reg(u16 reg, u8 *val)
 	au8RegBuf[1] = reg & 0x0000;  // JAD was - reg & 0xff
 
 	if (1 != i2c_master_send(ov5640_data.i2c_client, au8RegBuf, 1)) {   // JAD was 2
-//		pr_err(">>>> %s: write reg error:reg=%x\n",                     // JAD
-//				__func__, reg);
+		pr_err(">>>> %s: write reg error:reg=%x\n",                     // JAD
+				__func__, reg);
 		return -1;
 	}
 
 	if (1 != i2c_master_recv(ov5640_data.i2c_client, &u8RdVal, 1)) {
-//		pr_err(">>>> %s: read reg error:reg=%x,val=%x\n",             //JAD
-//				__func__, reg, u8RdVal);
+		pr_err(">>>> %s: read reg error:reg=%x,val=%x\n",             //JAD
+				__func__, reg, u8RdVal);
 		return -1;
 	}
 	*val = u8RdVal;
 
 	return u8RdVal;
 }
+
+static void ov5640_reset(void) 
+{ 
+//	/* camera reset */ 
+	gpio_set_value(rst_gpio, 1); 
+
+  	gpio_set_value(rst_gpio, 0); 
+  	msleep(2); 
+ 
+  	gpio_set_value(rst_gpio, 1); 
+  	msleep(20); 
+} 
+
 
 // static int prev_sysclk, prev_HTS;
 //static int AE_low, AE_high, AE_Target = 52;
@@ -320,10 +335,10 @@ int OV5640_get_sysclk(void)
 	 /* calculate sysclk */
 	int xvclk = ov5640_data.mclk / 10000;
 	int temp1, temp2;
-	int Multiplier, PreDiv, VCO, SysDiv, Pll_rdiv, Bit_div2x = 1, sclk_rdiv, sysclk;
+	int SysDiv, Bit_div2x = 1, sysclk;
 //	u8 temp;
 
-	int sclk_rdiv_map[] = {1, 2, 4, 8};
+//	int sclk_rdiv_map[] = {1, 2, 4, 8};
 
 //	temp1 = ov5640_read_reg(0x3034, &temp);
     temp1 = 24;
@@ -340,30 +355,6 @@ int OV5640_get_sysclk(void)
 	if (SysDiv == 0) {
 	    SysDiv = 16;
 	}
-
-//	temp1 = ov5640_read_reg(0x3036, &temp);
-//	temp1 = 56;
-//	pr_err("3 temp1: %i",temp1);
-//	Multiplier = temp1;
-//
-//	temp1 = ov5640_read_reg(0x3037, &temp);
-//	temp1 = 19;
-//	pr_err("4 temp1: %i",temp1);
-//	PreDiv = temp1 & 0x0f;
-//	Pll_rdiv = ((temp1 >> 4) & 0x01) + 1;
-//
-//	temp1 = ov5640_read_reg(0x3108, &temp);
-//	temp1 = 1;
-//	pr_err("5 temp1: %i",temp1);
-//	temp2 = temp1 & 0x03;
-//	sclk_rdiv = sclk_rdiv_map[temp2];
-//	VCO = xvclk * Multiplier / PreDiv;
-//	sysclk = VCO / SysDiv / Pll_rdiv * 2 / Bit_div2x / sclk_rdiv;
-//
-//	/* Bypass Hack */
-//	pr_err("sysclk1: %i", sysclk);              //5600
-//	pr_err("sysclk freq: %i",ov5640_data.mclk); //24000000 (24MHz)
-//	pr_err("xvclk: %i", xvclk);                 //2400
 
 	sysclk = 5600;
 	xvclk  = 2400;
@@ -435,8 +426,10 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	enum ov5640_downsize_mode dn_mode, orig_dn_mode;
 
 	pr_err ("\n>>>> ov5640_init_mode: build date = %s %s", __DATE__, __TIME__);
-	pr_err ("\n>>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i", frame_rate, mode, orig_mode,"\n");
+	pr_err ("\n>>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
+//	ov5640_reset();												// JAD added
+		
     pModeSetting = ub940_init_setting;         			        // JAD New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // JAD
     retval = ov5640_download_firmware(pModeSetting, ArySize);   // JAD
@@ -448,7 +441,7 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 
 		if (!mipi_csi2_get_status(mipi_csi2_info))
 		{
-			pr_err (">>>> %s: Debug ov5640 init mode: Line: %i", __LINE__);
+			pr_err (">>>> Debug ov5640 init mode: Line: %i", __LINE__);
 			mipi_csi2_enable(mipi_csi2_info);
 		}
 
@@ -463,7 +456,7 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);  // JAD force type MIPI_DT_RGB888 or MIPI_DT_YUV422
 			
 		} else {
-			pr_err(">>>> %s: Can not enable mipi csi2 driver!\n");
+			pr_err(">>>> %s: Can not enable mipi csi2 driver!\n",__FILE__);
 			return -1;
 		}
 	} else {
@@ -909,7 +902,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	struct sensor_data *sensor = s->priv;
 	u32 tgt_xclk;	/* target xclk */
 	u32 tgt_fps;	/* target frames per secound */
-	int ret;
+	int ret, ret2;
 	enum ov5640_frame_rate frame_rate;
 	void *mipi_csi2_info;
 
@@ -921,17 +914,17 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
         // set the client for the second device
         ov5640_data.i2c_client->addr = 0x10;
-//        int ret2 = ub9xx_write_reg(0x01, 0x02);        // reset 947 part
+//        ret2 = ub9xx_write_reg(0x01, 0x02);        // reset 947 part
 //        if(ret2)
 //        {
-//                printk(KERN_ERR, "device 2 write error: %d\n", ret2);
+//                printk(KERN_ERR "device 2 write error: %d\n", ret2);
 //                return ret2;
 //        }
 		
-        int ret2 = ub9xx_write_reg(0x4f, 0x40);            // set single pixel mode
+        ret2 = ub9xx_write_reg(0x4f, 0x40);            // set single pixel mode
         if(ret2)
         {
-                printk(KERN_ERR, "device 2 write error: %d\n", ret2);
+                printk(KERN_ERR "device 2 write error: %d\n", ret2);
                 return ret2;
         }
 
@@ -1053,9 +1046,21 @@ static int ov5640_probe(struct i2c_client *client,
 {
 	struct device *dev = &client->dev;
 	int retval;
-	struct fsl_mxc_camera_platform_data *plat_data = client->dev.platform_data;
+//	struct fsl_mxc_camera_platform_data *plat_data = client->dev.platform_data;
 
-//	pr_err("%s: >>>>  ov5640 camera probe function");
+
+	/* request reset pin */
+	rst_gpio = of_get_named_gpio(dev->of_node, "rst-gpios", 0);
+	if (!gpio_is_valid(rst_gpio)) {
+		dev_warn(dev, "no sensor reset pin available");
+		return -EINVAL;
+	}
+	retval = devm_gpio_request_one(dev, rst_gpio, GPIOF_OUT_INIT_HIGH,
+					"ov5640_mipi_reset");
+	if (retval < 0)
+		return retval;
+
+	pr_err("%s: >>>>  ov5640 camera probe function",__func__);
 
 	/* Set initial values for the sensor struct. */
 	memset(&ov5640_data, 0, sizeof(ov5640_data));
@@ -1088,9 +1093,10 @@ static int ov5640_probe(struct i2c_client *client,
 		return retval;
 	}
 
+
 	clk_prepare_enable(ov5640_data.sensor_clk);
 
-//	ov5640_data.io_init = ov5640_reset;
+//	ov5640_data.io_init = ov5640_reset;					 // JAD added back in
 	ov5640_data.i2c_client = client;
 	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
 	                                                     // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
@@ -1102,11 +1108,8 @@ static int ov5640_probe(struct i2c_client *client,
 	ov5640_data.streamcap.timeperframe.denominator = DEFAULT_FPS;
 	ov5640_data.streamcap.timeperframe.numerator = 1;
 
-//	ov5640_power_on(dev);
-
-//	ov5640_reset();
-
-//	ov5640_standby(0);
+//	ov5640_reset();										// JAD added back in
+	
 
 //	retval = ov5640_read_reg(OV5640_CHIP_ID_HIGH_BYTE, &chip_id_high);
 //	if (retval < 0 || chip_id_high != 0x56) {
@@ -1121,7 +1124,6 @@ static int ov5640_probe(struct i2c_client *client,
 //		return -ENODEV;
 //	}
 //
-//	ov5640_standby(1);
 
 	ov5640_int_device.priv = &ov5640_data;
 	retval = v4l2_int_device_register(&ov5640_int_device);
