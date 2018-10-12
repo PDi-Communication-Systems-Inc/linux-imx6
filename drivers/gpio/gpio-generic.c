@@ -135,6 +135,17 @@ static unsigned long bgpio_pin2mask_be(struct bgpio_chip *bgc,
 	return 1 << (bgc->bits - 1 - pin);
 }
 
+static int bgpio_get_set(struct gpio_chip *gc, unsigned int gpio)
+{
+	struct bgpio_chip *bgc = to_bgpio_chip(gc);
+	unsigned long pinmask = bgc->pin2mask(bgc, gpio);
+
+	if (bgc->dir & pinmask)
+		return bgc->read_reg(bgc->reg_set) & pinmask;
+	else
+		return bgc->read_reg(bgc->reg_dat) & pinmask;
+}
+
 static int bgpio_get(struct gpio_chip *gc, unsigned int gpio)
 {
 	struct bgpio_chip *bgc = to_bgpio_chip(gc);
@@ -343,7 +354,8 @@ static int bgpio_setup_accessors(struct device *dev,
 static int bgpio_setup_io(struct bgpio_chip *bgc,
 			  void __iomem *dat,
 			  void __iomem *set,
-			  void __iomem *clr)
+			  void __iomem *clr,
+			  unsigned long flags)
 {
 
 	bgc->reg_dat = dat;
@@ -361,7 +373,11 @@ static int bgpio_setup_io(struct bgpio_chip *bgc,
 		bgc->gc.set = bgpio_set;
 	}
 
-	bgc->gc.get = bgpio_get;
+	if (!(flags & BGPIOF_UNREADABLE_REG_SET) &&
+	    (flags & BGPIOF_READ_OUTPUT_REG_SET))
+		bgc->gc.get = bgpio_get_set;
+	else
+		bgc->gc.get = bgpio_get;
 
 	return 0;
 }
@@ -414,7 +430,7 @@ int bgpio_init(struct bgpio_chip *bgc, struct device *dev,
 	bgc->gc.base = -1;
 	bgc->gc.ngpio = bgc->bits;
 
-	ret = bgpio_setup_io(bgc, dat, set, clr);
+	ret = bgpio_setup_io(bgc, dat, set, clr, flags);
 	if (ret)
 		return ret;
 
