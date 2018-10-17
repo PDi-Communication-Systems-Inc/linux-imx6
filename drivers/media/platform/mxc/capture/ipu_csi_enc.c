@@ -41,7 +41,7 @@
 static ktime_t start, last;
 static s64 total_time;
 static unsigned int no_of_frame;
-static unsigned int overall_time;
+
 static int irq_start;
 static int measure_in_ms;
 
@@ -61,7 +61,8 @@ static u32 ub_in_format;
 /*
  * Function definitions
  */
-
+static void dbg_show_in_fps(void);
+static void dbg_measure_in_fps(void);
 /*
 * FPS Measurement APIs
 */
@@ -81,8 +82,8 @@ static void dbg_show_in_fps()
 
 	rem = div64_ul(temp_time, total_time);
 
-	pr_err("NXP Total F:%d, IN@ %lld fps Total time %lld\n",
-			no_of_frame, rem, total_time);
+//	pr_err("++++ NXP Total F:%d, IN@ %lld fps Total time %lld\n",
+//			no_of_frame, rem, total_time);
 }
 
 static void dbg_measure_in_fps()
@@ -94,7 +95,7 @@ static void dbg_measure_in_fps()
 	if (!irq_start) {
 		last = start = ktime_get();
 		irq_start = 1;
-		pr_err("CSI0 IRQ STARTED\n");
+		pr_err("++++ CSI0 IRQ STARTED\n");
 		return;
 	}
 	end = ktime_get();
@@ -103,7 +104,7 @@ static void dbg_measure_in_fps()
 		actual_time = ktime_to_ms(ktime_sub(end, last));
 		total_time = ktime_to_ms(ktime_sub(end, start));
 /*
-		pr_err("F:%d, IRQ:@ %u ms\n",
+		pr_err("++++ F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
 */
 	} else {
@@ -114,8 +115,8 @@ static void dbg_measure_in_fps()
 	}
 
 	if (actual_time > 90) {
-		pr_err("FPS Time was greater than 90mS \n");
-		pr_err("F:%d, IRQ:@ %u ms\n",
+		pr_err("++++ FPS Time was greater than 90mS \n");
+		pr_err("++++ F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
 	}
 	last = end;
@@ -145,19 +146,23 @@ static void directly_display(cam_data *cam)
 static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
 	cam_data *cam = (cam_data *) dev_id;
-
-	if (cam->enc_callback == NULL)
-		return IRQ_HANDLED;
-
 	dbg_measure_in_fps();
+
+	if (cam->enc_callback == NULL){
+		pr_err("++++ %s callback=null \n", __func__);	//JAD
+		return IRQ_HANDLED;
+		}
+
 	if (cam->usefg == 1) {
 		directly_display(cam);
-
+//	    pr_err("++++ %s usefg=1 \n", __func__);    //JAD
 		cam->direct_callback(0, cam);
 		return IRQ_HANDLED;
-	} else {
+		} 
+	else {
 		cam->enc_callback(irq, dev_id);
-	}
+		pr_err("++++ %s usefg=0 \n", __func__);    //JAD
+		}
 	return IRQ_HANDLED;
 }
 
@@ -346,7 +351,7 @@ static void get_disp_ipu(cam_data *cam)
 static int foreground_start(void *private)
 {
 	cam_data *cam = (cam_data *) private;
-	int err = 0, i = 0, screen_size;
+	int err = 0, i = 0, screen_size;            //JAD where is this initialized
 	char *base;
 	int bpp;
 
@@ -612,9 +617,9 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
+	pr_err("++++ %s\n", __func__);
 	cam_data *cam = (cam_data *) private;
-	pr_err("+++++++++%s\n", __func__);
-	irq_start = 0;
+	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
 
@@ -634,9 +639,8 @@ static int csi_enc_disable_csi(void *private)
 	/* free csi eof irq firstly.
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
-        ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
-
-	pr_err("#####%s\n", __func__);
+    ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
+	pr_err("++++%s\n", __func__);
 	dbg_show_in_fps();
 
 	return ipu_disable_csi(cam->ipu, cam->csi);

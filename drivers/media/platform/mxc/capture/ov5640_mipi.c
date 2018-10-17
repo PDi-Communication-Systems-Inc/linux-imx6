@@ -37,77 +37,28 @@
 #include "mxc_v4l2_capture.h"
 
 #define MIN_FPS 15
-#define MAX_FPS 30			                 // JAD was 30
-#define DEFAULT_FPS 30		                 // JAD was 30
+#define MAX_FPS 30
+#define DEFAULT_FPS 30
 
 #define OV5640_XCLK_MIN 6000000
-#define OV5640_XCLK_MAX 24000000             // JAD was 24000000
+#define OV5640_XCLK_MAX 24000000
 
-// #define OV5640_CHIP_ID_HIGH_BYTE	0x300A
-// #define OV5640_CHIP_ID_LOW_BYTE	0x300B
-
-/*enum ov5640_mode {
-        ov5640_mode_MIN                 = 0,
-        ov5640_mode_VGA_640_480         = 0,
-        ov5640_mode_LCD_1370_768        = 1,  //JAD change?
- //       ov5640_mode_QVGA_320_240      = 1,
- //       ov5640_mode_NTSC_720_480      = 2,
- //       ov5640_mode_PAL_720_576       = 3,
- //       ov5640_mode_720P_1280_720     = 4, 
- //       ov5640_mode_1080P_1920_1080   = 5,
- //       ov5640_mode_QSXGA_2592_1944   = 6,
- //       ov5640_mode_QCIF_176_144      = 7,
-        ov5640_mode_XGA_1370_768        = 2,    // was ov5640_mode_XGA_1024_768024
-        ov5640_mode_MAX                 = 2,    // was 4
-        ov5640_mode_INIT                = 0xff, // only for sensor init
-//};
-*/
 enum ov5640_mode {
         ov5640_mode_MIN               = 0,
         ov5640_mode_VGA_640_480       = 0,
-        ov5640_mode_QVGA_320_240      = 1,
-        ov5640_mode_NTSC_720_480      = 2,
-        ov5640_mode_PAL_720_576       = 3,
-        ov5640_mode_720P_1280_720     = 4,
-        ov5640_mode_XGA_1368_768024   = 5,  	// was ov5640_mode_XGA_1024_768024		
-        ov5640_mode_1080P_1920_1080   = 6,
-        ov5640_mode_QSXGA_2592_1944   = 7,
-        ov5640_mode_QCIF_176_144      = 8,
-        ov5640_mode_MAX               = 6,   	// was 4
+        ov5640_mode_MAX               = 0,   	// was 4
         ov5640_mode_INIT              = 0xff, 	//only for sensor init
 };
 enum ov5640_frame_rate {
-	ov5640_15_fps,
 	ov5640_30_fps
 };
 
-//static int ov5640_framerates[] = {
-//	[ov5640_15_fps] = 15,
-//	[ov5640_30_fps] = 30,
-//};
-
-/* image size under 1280 * 960 are SUBSAMPLING
- * image size upper 1280 * 960 are SCALING
- */
-enum ov5640_downsize_mode {
-	SUBSAMPLING,
-	SCALING,
-};
 
 struct reg_value {
 	u16 u16RegAddr; 
 	u8  u8Val;
 	u8  u8Mask;
 	u32 u32Delay_ms;
-};
-
-struct ov5640_mode_info {
-	enum ov5640_mode mode;
-	enum ov5640_downsize_mode dn_mode;
-	u32 width;
-	u32 height;
-	struct reg_value *init_data_ptr;
-	u32 init_data_size;
 };
 
 static int rst_gpio;
@@ -118,133 +69,32 @@ static int rst_gpio;
 static struct sensor_data ov5640_data;
 
 //
-// JAD DS90ub740 Init Settings - out of reset - feed through
+// DS90ub940 Init Settings - feed through
 // 0x0018 is a general puropse mailbox location for testing 
 // reads and writes.  CSI indirect address = 0x6c, data=0x6d, 
 // For RGB888 instead of YUV422, change 0x006b from 0x50 to 0x00
 // For Stripe bars instead of sequence, 0x0064, bit 2=1 (11->15)
 static struct reg_value ub940_init_setting[] = {
-
-    {0x0001, 0x02, 0, 0},{0x0064, 0x00, 0, 0},                         // Reset the part
-	{0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0}, {0x006d, 0x00, 0, 0},   // Virtual Channel ID=0, YUV422 
-                                                                       // Set Pattern Generator (indirect Registers)    
-	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, 
-	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0},                        
-	{0x0066, 0x05, 0, 0}, {0x0067, 0x16, 0, 0},                        
- 	{0x0066, 0x06, 0, 0}, {0x0067, 0x32, 0, 0},
- 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	
-	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},                        
- 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, 
-	{0x0066, 0x0a, 0, 0}, {0x0067, 0x70, 0, 0},                        
- 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0}, 
-	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},                        
- 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0}, 
-	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0},                        
- 	{0x0065, 0x04, 0, 0}, {0x0064, 0xe0, 0, 0}, 
-		
-/*	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},                        
-          
-    {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0},  // Sequence to turn on pattern generator.
-	{0x0068, 0x31, 0, 0}, {0x0065, 0x04, 0, 0}, {0x0068, 0x01, 0, 0},  // Turn Pat Gen on
-	{0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0},  // Empty
-
-    {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0}, {0x0065, 0x05, 0, 0},  // Turn Pat Gen on
-    {0x0039, 0x02, 0, 0}, {0x0064, 0x11, 0, 0}, {0x0066, 0x04, 0, 0},  // 
-    {0x0066, 0x05, 0, 0}, {0x0066, 0x05, 0, 0}, {0x0066, 0x06, 0, 0},  // 
-	{0x0066, 0x03, 0, 0}, {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0},  // 
-	{0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0},  //       
-*/
-};
-/*
-static struct reg_value ub940_640x480_setting[] = {
-    {0x0001, 0x02, 0, 0},                                              // Reset the part
-	{0x006c, 0x2e, 0, 0}, {0x006d, 0x40, 0, 0}, {0x006b, 0x50, 0, 0},  // Virtual Channel ID=1, YUV422 
-                                                                       // Set Pattern Generator (indirect Registers)    
-	{0x0066, 0x07, 0, 0}, {0x0067, 0x80, 0, 0},                         
-    {0x0066, 0x08, 0, 0}, {0x0067, 0x02, 0, 0},                        
-	{0x0066, 0x08, 0, 0}, {0x0067, 0x02, 0, 0},                        
-	{0x0066, 0x09, 0, 0}, {0x0067, 0x1e, 0, 0},   
-	{0x0066, 0x0c, 0, 0}, {0x0067, 0x28, 0, 0},
-    {0x0066, 0x04, 0, 0}, {0x0067, 0x20, 0, 0},
-    {0x0066, 0x05, 0, 0}, {0x0067, 0xe3, 0, 0},
-    {0x0066, 0x0a, 0, 0}, {0x0067, 0x60, 0, 0},
-    {0x0066, 0x0d, 0, 0}, {0x0067, 0x19, 0, 0},
-    {0x0066, 0x05, 0, 0}, {0x0067, 0xd3, 0, 0},
-    {0x0066, 0x06, 0, 0}, {0x0067, 0x20, 0, 0},
-    {0x0066, 0x0b, 0, 0}, {0x0067, 0x02, 0, 0},
-    {0x0066, 0x0e, 0, 0}, {0x0067, 0x01, 0, 0},
-    {0x0066, 0x0e, 0, 0}, {0x0067, 0x03, 0, 0},
-    {0x0066, 0x03, 0, 0}, {0x0067, 0x08, 0, 0},
-        
-    {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0},  // Sequence to turn on pattern generator.
-	{0x0068, 0x31, 0, 0}, {0x0065, 0x04, 0, 0}, {0x0068, 0x01, 0, 0},  // Turn Pat Gen on
-	{0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0},  // Empty
-
-    {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0}, {0x0065, 0x05, 0, 0},  // Turn Pat Gen on
-    {0x0039, 0x02, 0, 0}, {0x0064, 0x11, 0, 0}, {0x0066, 0x04, 0, 0},  // 
-    {0x0066, 0x05, 0, 0}, {0x0066, 0x05, 0, 0}, {0x0066, 0x06, 0, 0},  // 
-	{0x0066, 0x03, 0, 0}, {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0},  // 
-	{0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0},  //       
+    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
+	{0x006d, 0x00, 0, 0},						
+												// Set Pattern Generator (indirect Registers)  
+	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
+	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0}, // Total  Frame Size 1                     
+	{0x0066, 0x05, 0, 0}, {0x0067, 0x16, 0, 0}, // Total  Frame Size 2                        
+ 	{0x0066, 0x06, 0, 0}, {0x0067, 0x32, 0, 0}, // Total  Frame Size 3
+ 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
+	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
+ 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
+	{0x0066, 0x0a, 0, 0}, {0x0067, 0x70, 0, 0},	// Horiz  Sync Width                       
+ 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
+	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
+ 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
+	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0}, // Sync Configuration                       
+ 	{0x0065, 0x04, 0, 0}, {0x0064, 0xe0, 0, 0}, // PG select own timing, Disable generator
+ //	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
+	{0x0064, 0x14, 0, 0}						// Turn generator off
 };
 
-// For RGB888 instead of YUV422, change 0x006b from 0x50 to 0x00
-// For Stripe bars instead of sequence, 0x0064, bit 2=1 (11->15)
-static struct reg_value ub940_1360x768_setting[] = {
-    {0x0001, 0x02, 0, 0},                                              // Reset the part
-	{0x006b, 0x50, 0, 0}, {0x006c, 0x2e, 0, 0}, {0x006d, 0x40, 0, 0},  // Virtual Channel ID=1, YUV422 
-    // Set Pattern Generator (indirect Registers)   
-	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0}, 
-	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0},                        
-	{0x0066, 0x04, 0, 0}, {0x0067, 0x00, 0, 0}, 
-	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0},                        
- 	{0x0066, 0x07, 0, 0}, {0x0067, 0x50, 0, 0}, 
-	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},                        
- 	{0x0066, 0x0a, 0, 0}, {0x0067, 0x70, 0, 0}, 
-	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},                        
- 	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0}, 
-	{0x0066, 0x06, 0, 0}, {0x0067, 0x31, 0, 0},                        
- 	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0}, 
-	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0},                        
- 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0}, 
-	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},                        
-          
-    {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0},  // Sequence to turn on pattern generator.
-	{0x0068, 0x31, 0, 0}, {0x0065, 0x04, 0, 0}, {0x0068, 0x01, 0, 0},  // Turn Pat Gen on
-	{0x0068, 0x11, 0, 0}, {0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0},  // Empty
-
-    {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0}, {0x0065, 0x05, 0, 0},  // Turn Pat Gen on
-    {0x0039, 0x02, 0, 0}, {0x0064, 0x15, 0, 0}, {0x0066, 0x04, 0, 0},  // Color bars-0x0064, bit 2=1
-    {0x0066, 0x05, 0, 0}, {0x0066, 0x05, 0, 0}, {0x0066, 0x06, 0, 0},  // 
-	{0x0066, 0x03, 0, 0}, {0x0068, 0x01, 0, 0}, {0x0068, 0x11, 0, 0},  // 
-	{0x0068, 0x21, 0, 0}, {0x0068, 0x31, 0, 0}, {0x0018, 0x00, 0, 0},  // 
-	
-};
-*/
-// Original MIPI Structures
-//static struct reg_value ov5640_init_setting_30fps_VGA[] = {
-//};
-
-static struct reg_value ov5640_setting_30fps_VGA_640_480[] = {
-};
-
-static struct reg_value ov5640_setting_15fps_VGA_640_480[] = {
-};
-
-
-static struct ov5640_mode_info ov5640_mode_info_data[2][ov5640_mode_MAX + 1] = {    // JAD was 5
-	{
-		{ov5640_mode_VGA_640_480, SUBSAMPLING, 1368,  768,        // JAD was 640 x 480
-		ov5640_setting_15fps_VGA_640_480,
-		ARRAY_SIZE(ov5640_setting_15fps_VGA_640_480)},
-	},
-	{
-		{ov5640_mode_VGA_640_480, SUBSAMPLING, 1368,  768,        // JAD was 640 x 480
-		ov5640_setting_30fps_VGA_640_480,
-		ARRAY_SIZE(ov5640_setting_30fps_VGA_640_480)},
-	},
-};
-
-//static struct fsl_mxc_camera_platform_data *camera_plat;
 
 static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
@@ -253,7 +103,6 @@ static int ov5640_remove(struct i2c_client *client);
 static s32 ub9xx_read_reg (u16 reg, u8 *val);
 static s32 ub9xx_write_reg(u16 reg, u8  val);
 
-// 
 static const struct i2c_device_id ov5640_id[] = {
 	{"ov5640_mipi", 0},
 	{},
@@ -261,7 +110,6 @@ static const struct i2c_device_id ov5640_id[] = {
 
 MODULE_DEVICE_TABLE(i2c, ov5640_id);
 
-// 
 static struct i2c_driver ov5640_i2c_driver = {
 	.driver = {
 		  .owner = THIS_MODULE,
@@ -272,40 +120,38 @@ static struct i2c_driver ov5640_i2c_driver = {
 	.id_table = ov5640_id,
 };
 
-// This can become 74ub9xx write function
-// add addditional comments
+// 74ub9xx write function
 static s32 ub9xx_write_reg(u16 reg, u8 val)
 {
 	u8 au8Buf[3] = {0};         // 2 address and 1 data value    
 	au8Buf   [0] = reg & 0xff;  // JAD was - reg >> 8
 	au8Buf   [1] = val;         // JAD was - reg & 0xff
 	au8Buf   [2] = val;         // may be able to get rid of this
-	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {                // JAD was 3
-		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);             // JAD
+	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {		// JAD was 3
+		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);    // JAD
 		return -1;
 	}
 
 	return 0;
 }
 
-// This can become 74ub9xx read function
-// add addditional comments
+// 74ub9xx read function
 static s32 ub9xx_read_reg(u16 reg, u8 *val)
 {
 	u8 au8RegBuf[2] = {0};        // 2 address and 1 data value  
 	u8 u8RdVal = 0;
 
-	au8RegBuf[0] = reg & 0xff;    // JAD was - reg >> 8
-	au8RegBuf[1] = reg & 0x0000;  // JAD was - reg & 0xff
+	au8RegBuf[0] = reg & 0xff;    // was - reg >> 8
+	au8RegBuf[1] = reg & 0x0000;  // was - reg & 0xff
 
-	if (1 != i2c_master_send(ov5640_data.i2c_client, au8RegBuf, 1)) {   // JAD was 2
-		pr_err(">>>> %s: write reg error:reg=%x\n",                     // JAD
+	if (1 != i2c_master_send(ov5640_data.i2c_client, au8RegBuf, 1)) {   // was 2
+		pr_err(">>>> %s: write reg error:reg=%x\n",                     // 
 				__func__, reg);
 		return -1;
 	}
 
 	if (1 != i2c_master_recv(ov5640_data.i2c_client, &u8RdVal, 1)) {
-		pr_err(">>>> %s: read reg error:reg=%x,val=%x\n",             //JAD
+		pr_err(">>>> %s: read reg error:reg=%x,val=%x\n",             	//
 				__func__, reg, u8RdVal);
 		return -1;
 	}
@@ -316,48 +162,20 @@ static s32 ub9xx_read_reg(u16 reg, u8 *val)
 
 static void ov5640_reset(void) 
 { 
-//	/* camera reset */ 
+	/* camera reset */ 
 	gpio_set_value(rst_gpio, 1); 
 
   	gpio_set_value(rst_gpio, 0); 
-  	msleep(2); 
+  	msleep(1); 
  
   	gpio_set_value(rst_gpio, 1); 
-  	msleep(20); 
 } 
-
-
-// static int prev_sysclk, prev_HTS;
-//static int AE_low, AE_high, AE_Target = 52;
 
 int OV5640_get_sysclk(void)
 {
 	 /* calculate sysclk */
-	int xvclk = ov5640_data.mclk / 10000;
-	int temp1, temp2;
-	int SysDiv, Bit_div2x = 1, sysclk;
-//	u8 temp;
-
-//	int sclk_rdiv_map[] = {1, 2, 4, 8};
-
-//	temp1 = ov5640_read_reg(0x3034, &temp);
-    temp1 = 24;
-//	pr_err(">>>> %s 1 temp1: %i",temp1);  // JAD
-	temp2 = temp1 & 0x0f;
-	if (temp2 == 8 || temp2 == 10) {
-		Bit_div2x = temp2 / 2;
-	}
-
-//	temp1 = ov5640_read_reg(0x3035, &temp);
-	temp1 = 20;
-//	pr_err(" >>>> %s 2 temp1: %i", temp1);  // JAD
-	SysDiv = temp1>>4;
-	if (SysDiv == 0) {
-	    SysDiv = 16;
-	}
-
+	int sysclk;
 	sysclk = 5600;
-	xvclk  = 2400;
 
 	return sysclk;
 }
@@ -384,7 +202,6 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 
 		if (Mask) {
 			retval = ub9xx_read_reg(RegAddr, &RegVal);
-//			pr_err("%s: >>>> Get RegVal: %i", RegVal);    // JAD
 
 			if (retval < 0)
 				goto err;
@@ -395,7 +212,6 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 		}
 		retval = ub9xx_write_reg(RegAddr, Val);
 
-//		pr_err("retval 2: %i", retval);
 		if (retval < 0)
 			goto err;
 
@@ -406,15 +222,6 @@ err:
 	return retval;
 }
 
-/* sensor changes between scaling and subsampling
- * go through exposure calcualtion
- */
-//static int ov5640_change_mode_exposure_calc(enum ov5640_frame_rate frame_rate,
-//				enum ov5640_mode mode)
-//{
-//    return 0;
-//}
-
 static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			    enum ov5640_mode mode, enum ov5640_mode orig_mode)
 {
@@ -423,16 +230,13 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	int retval  = 0;
 	void *mipi_csi2_info;
 	u32 mipi_reg, msec_wait4stable = 0;
-	enum ov5640_downsize_mode dn_mode, orig_dn_mode;
 
-	pr_err ("\n>>>> ov5640_init_mode: build date = %s %s", __DATE__, __TIME__);
-	pr_err ("\n>>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
+	pr_err (">>>> ov5640_init_mode: build date = %s %s\n", __DATE__, __TIME__);
+	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
-//	ov5640_reset();												// JAD added
-		
-    pModeSetting = ub940_init_setting;         			        // JAD New for LVDS-CSI2
-    ArySize = ARRAY_SIZE(ub940_init_setting);                   // JAD
-    retval = ov5640_download_firmware(pModeSetting, ArySize);   // JAD
+    pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
+    ArySize = ARRAY_SIZE(ub940_init_setting);                   // 
+    retval = ov5640_download_firmware(pModeSetting, ArySize);   // 
 
 	mipi_csi2_info = mipi_csi2_get_info();
 
@@ -441,7 +245,7 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 
 		if (!mipi_csi2_get_status(mipi_csi2_info))
 		{
-			pr_err (">>>> Debug ov5640 init mode: Line: %i", __LINE__);
+			pr_err (">>>> Debug ov5640 init mode: Line: %i\n", __LINE__);
 			mipi_csi2_enable(mipi_csi2_info);
 		}
 
@@ -449,11 +253,13 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			mipi_csi2_set_lanes(mipi_csi2_info);
 
 			/*Only reset MIPI CSI2 HW at sensor initialize*/
-			if (mode == ov5640_mode_INIT) 
+			if (mode == ov5640_mode_INIT)
+			{
+				pr_err (">>>> Debug ov5640 init mode: Line: %i\n", __LINE__);				
 				mipi_csi2_reset(mipi_csi2_info);
+			}
 
-
-			mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);  // JAD force type MIPI_DT_RGB888 or MIPI_DT_YUV422
+			mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);  // force type MIPI_DT_YUV422
 			
 		} else {
 			pr_err(">>>> %s: Can not enable mipi csi2 driver!\n",__FILE__);
@@ -464,59 +270,37 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 		return -1;
 	}
 
-	dn_mode = ov5640_mode_info_data[frame_rate][mode].dn_mode;
-	orig_dn_mode = ov5640_mode_info_data[frame_rate][orig_mode].dn_mode;
 	if (mode == ov5640_mode_INIT) {
-//                pModeSetting = ov5640_init_setting_30fps_VGA;         // JAD remove
-//                ArySize = ARRAY_SIZE(ov5640_init_setting_30fps_VGA);  // JAD remove   
 
-		  ov5640_data.pix.width  =  FOR_ANDROID_WIDTH;   //  JAD was 640
-		  ov5640_data.pix.height =   768;   //  JAD was 480
-//        retval = ov5640_download_firmware(pModeSetting, ArySize);
+		  ov5640_data.pix.width  =  FOR_ANDROID_WIDTH;	// was 640
+		  ov5640_data.pix.height =   768;   			// was 480
+
 		if (retval < 0){
 			goto err;
 		}
 
-	} else if ((dn_mode == SUBSAMPLING && orig_dn_mode == SCALING) ||
-			(dn_mode == SCALING && orig_dn_mode == SUBSAMPLING)) {
-		/* change between subsampling and scaling
-		 * go through exposure calucation */
-//		retval = ov5640_change_mode_exposure_calc(frame_rate, mode);
-	} else {
-		/* change inside subsampling or scaling
-		 * download firmware directly */
-//		retval = ov5640_change_mode_direct(frame_rate, mode);
 	}
 
 	if (retval < 0)
 		goto err;
 
-	if (frame_rate == ov5640_15_fps) {
-		/* dump the first nine frames: 1/15*9 */
-		msec_wait4stable = 600;
-
-	} else if (frame_rate == ov5640_30_fps) {           // JAD was 30 fps
-		/* dump the first nine frames: 1/30*9 */
-		msec_wait4stable = 300;                         // JAD was 300
-
-	}
+	msec_wait4stable = 300;                         
 	msleep(msec_wait4stable);
 
 	if (mipi_csi2_info) {
 		unsigned int i;
-//        pr_err (">>>> %s: Debug ov5640 init mode: Line: %i", __LINE__);
 		i = 0;
 		/* wait for mipi sensor ready */
 		mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
-//	        pr_err (">>>> %s: 0 try: %i csi2 dphy status: 0x%X", i, mipi_reg);
-		while ((mipi_reg != 0x330) && (i < 10)) { //original == 0x200
+		pr_err("++++ %s mipi_reg=%x \n", __func__, mipi_reg);   //JAD added debug
+		while ((mipi_reg != 0x200) && (i < 10)) { 				//original == 0x330 changed to 200
 			mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
-//		        pr_err (">>>> %s: 1 try:%i csi2 dphy status: 0x%X", i, mipi_reg);
+
 			i++;
 			msleep(10);
 		}
 		if (i >= 10) {
-//			pr_err(">>>> %s: mipi csi2 can not receive sensor clk!\n");
+
 			return -1;
 		}
 
@@ -550,39 +334,16 @@ static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
 
 	memset(p, 0, sizeof(*p));
 	p->u.bt656.clock_curr = ov5640_data.mclk;
-	p->if_type = V4L2_IF_TYPE_BT656;	                    // JAD Change this?  was V4L2_IF_TYPE_BT656
+	p->if_type = V4L2_IF_TYPE_BT656;	                    // Change this?  was V4L2_IF_TYPE_BT656
 	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_BT_8BIT;      // Was V4L2_IF_TYPE_BT656_MODE_BT_8BIT
 	p->u.bt656.clock_min = OV5640_XCLK_MIN;
 	p->u.bt656.clock_max = OV5640_XCLK_MAX;
-	p->u.bt656.bt_sync_correct = 1;                         /* JAD Indicate external vsync - was 0 */
+	p->u.bt656.bt_sync_correct = 1;                         /* Indicate external vsync - was 0 */
 
 	return 0;
 }
 
-/*!
- * ioctl_s_power - V4L2 sensor interface handler for VIDIOC_S_POWER ioctl
- * @s: pointer to standard V4L2 device structure
- * @on: indicates power mode (on or off)
- *
- * Turns the power on or off, depending on the value of on and returns the
- * appropriate error code.
- */
-static int ioctl_s_power(struct v4l2_int_device *s, int on)
-{
-	struct sensor_data *sensor = s->priv;
 
-	sensor->on = on;
-
-	return 0;
-}
-
-/*!
- * ioctl_g_parm - V4L2 sensor interface handler for VIDIOC_G_PARM ioctl
- * @s: pointer to standard V4L2 device structure
- * @a: pointer to standard V4L2 VIDIOC_G_PARM ioctl structure
- *
- * Returns the sensor's video CAPTURE parameters.
- */
 static int ioctl_g_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 {
 	struct sensor_data *sensor = s->priv;
@@ -633,8 +394,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 	struct sensor_data *sensor = s->priv;
 	struct v4l2_fract *timeperframe = &a->parm.capture.timeperframe;
 	u32 tgt_fps;	/* target frames per secound */
-	enum ov5640_frame_rate frame_rate;
-	enum ov5640_mode orig_mode;
+
 	int ret = 0;
 
 	switch (a->type) {
@@ -661,24 +421,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 		/* Actual frame rate we use */
 		tgt_fps = timeperframe->denominator /
 			  timeperframe->numerator;
-
-		if (tgt_fps == 15)
-			frame_rate = ov5640_15_fps;
-		else if (tgt_fps == 30)
-			frame_rate = ov5640_30_fps;
-		else {
-			pr_err(" The camera frame rate is not supported!\n");
-			return -EINVAL;
-		}
-
-		orig_mode = sensor->streamcap.capturemode;
-//		ret = ov5640_init_mode(frame_rate,
-//				(u32)a->parm.capture.capturemode, orig_mode);
-		if (ret < 0) {
-//			pr_err(">>>> %s: ov5640 init mode error 1\n");
-			return ret;
-		}
-
+			  
 		sensor->streamcap.timeperframe = *timeperframe;
 		sensor->streamcap.capturemode =
 				(u32)a->parm.capture.capturemode;
@@ -703,7 +446,7 @@ static int ioctl_s_parm(struct v4l2_int_device *s, struct v4l2_streamparm *a)
 		ret = -EINVAL;
 		break;
 	}
-
+	pr_err("\n>>>> %s:\n",__func__);
 	return ret;
 }
 
@@ -766,58 +509,6 @@ static int ioctl_g_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
 	return ret;
 }
 
-/*!
- * ioctl_s_ctrl - V4L2 sensor interface handler for VIDIOC_S_CTRL ioctl
- * @s: pointer to standard V4L2 device structure
- * @vc: standard V4L2 VIDIOC_S_CTRL ioctl structure
- *
- * If the requested control is supported, sets the control's current
- * value in HW (and updates the video_control[] array).  Otherwise,
- * returns -EINVAL if the control is not supported.
- */
-static int ioctl_s_ctrl(struct v4l2_int_device *s, struct v4l2_control *vc)
-{
-	int retval = 0;
-
-	pr_debug("In ov5640:ioctl_s_ctrl %d\n",
-		 vc->id);
-
-	switch (vc->id) {
-	case V4L2_CID_BRIGHTNESS:
-		break;
-	case V4L2_CID_CONTRAST:
-		break;
-	case V4L2_CID_SATURATION:
-		break;
-	case V4L2_CID_HUE:
-		break;
-	case V4L2_CID_AUTO_WHITE_BALANCE:
-		break;
-	case V4L2_CID_DO_WHITE_BALANCE:
-		break;
-	case V4L2_CID_RED_BALANCE:
-		break;
-	case V4L2_CID_BLUE_BALANCE:
-		break;
-	case V4L2_CID_GAMMA:
-		break;
-	case V4L2_CID_EXPOSURE:
-		break;
-	case V4L2_CID_AUTOGAIN:
-		break;
-	case V4L2_CID_GAIN:
-		break;
-	case V4L2_CID_HFLIP:
-		break;
-	case V4L2_CID_VFLIP:
-		break;
-	default:
-		retval = -EPERM;
-		break;
-	}
-
-	return retval;
-}
 
 /*!
  * ioctl_enum_framesizes - V4L2 sensor interface handler for
@@ -834,14 +525,9 @@ static int ioctl_enum_framesizes(struct v4l2_int_device *s,
 		return -EINVAL;
 
 	fsize->pixel_format = ov5640_data.pix.pixelformat;
-	fsize->discrete.width =	FOR_ANDROID_WIDTH;							    // JAD was 640
-//	fsize->discrete.width =
-//			max(ov5640_mode_info_data[0][fsize->index].width,
-//			    ov5640_mode_info_data[1][fsize->index].width);
-//	fsize->discrete.height = 
-    fsize->discrete.height =  768;							    // JAD was 480
-//			max(ov5640_mode_info_data[0][fsize->index].height,
-//			    ov5640_mode_info_data[1][fsize->index].height);
+	fsize->discrete.width =	FOR_ANDROID_WIDTH;					// was 640
+    fsize->discrete.height =  768;							    // was 480
+
 	return 0;
 }
 
@@ -899,37 +585,28 @@ static int ioctl_enum_fmt_cap(struct v4l2_int_device *s,
  */
 static int ioctl_dev_init(struct v4l2_int_device *s)
 {
-	struct sensor_data *sensor = s->priv;
+//	struct sensor_data *sensor = s->priv;
 	u32 tgt_xclk;	/* target xclk */
-	u32 tgt_fps;	/* target frames per secound */
-	int ret, ret2;
+	int ret=0, ret2;
 	enum ov5640_frame_rate frame_rate;
 	void *mipi_csi2_info;
 
 // ************************ second device *********************
-        // save the original (device 1) address
-        u8 addr1 = ov5640_data.i2c_client->addr;
+    // save the original (device 1) address
+    u8 addr1 = ov5640_data.i2c_client->addr;
 
-        // equivalent of "i2cset -f -y 0 0x10 0x4f 0x40"
+	// equivalent of "i2cset -f -y 0 0x10 0x4f 0x40"
+    ov5640_data.i2c_client->addr = 0x10;			// set the client for the second device
+    ret2 = ub9xx_write_reg(0x4f, 0x40);            	// set single pixel mode
 
-        // set the client for the second device
-        ov5640_data.i2c_client->addr = 0x10;
-//        ret2 = ub9xx_write_reg(0x01, 0x02);        // reset 947 part
-//        if(ret2)
-//        {
-//                printk(KERN_ERR "device 2 write error: %d\n", ret2);
-//                return ret2;
-//        }
-		
-        ret2 = ub9xx_write_reg(0x4f, 0x40);            // set single pixel mode
-        if(ret2)
-        {
-                printk(KERN_ERR "device 2 write error: %d\n", ret2);
-                return ret2;
-        }
+    if(ret2)
+    {
+        printk(KERN_ERR "device 2 write error: %d\n", ret2);
+        return ret2;
+    }
 
-        // restore the device 1 address
-        ov5640_data.i2c_client->addr = addr1;
+    // restore the device 1 address
+    ov5640_data.i2c_client->addr = addr1;
 // ********************** end second device *******************
 
 	ov5640_data.on = true;
@@ -937,20 +614,8 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	/* mclk */
 	tgt_xclk = ov5640_data.mclk;
 
-//	set_mclk_rate(&ov5640_data.mclk, ov5640_data.mclk_source);
-
 	/* Default camera frame rate is set in probe */
-	tgt_fps = sensor->streamcap.timeperframe.denominator /   // JAD
-		  sensor->streamcap.timeperframe.numerator;          // JAD
-
-	if (tgt_fps == 15)
-		frame_rate = ov5640_15_fps;
-	else if (tgt_fps == 30)
-		frame_rate = ov5640_30_fps;
-	else
-		return -EINVAL; /* Only support 15fps or 30fps now. */
-
-	frame_rate = ov5640_30_fps;                              // JAD - force FPS
+	frame_rate = ov5640_30_fps;                              // force FPS
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* enable mipi csi2 */
@@ -961,8 +626,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 		       __func__, __FILE__);
 		return -EPERM;
 	}
-
-	ret = ov5640_init_mode(frame_rate, ov5640_mode_INIT, ov5640_mode_INIT);
+	pr_err(">>>> %s:\n",__func__);
 
 	return ret;
 }
@@ -992,9 +656,9 @@ static int ioctl_dev_exit(struct v4l2_int_device *s)
  * enumeration.
  */
 static struct v4l2_int_ioctl_desc ov5640_ioctl_desc[] = {
-	{vidioc_int_dev_init_num, (v4l2_int_ioctl_func*) ioctl_dev_init},
+	{vidioc_int_dev_init_num, (v4l2_int_ioctl_func*) ioctl_dev_init}, 
 	{vidioc_int_dev_exit_num, ioctl_dev_exit},
-	{vidioc_int_s_power_num, (v4l2_int_ioctl_func*) ioctl_s_power},
+/*	{vidioc_int_s_power_num, (v4l2_int_ioctl_func*) ioctl_s_power},  */
 	{vidioc_int_g_ifparm_num, (v4l2_int_ioctl_func*) ioctl_g_ifparm},
 /*	{vidioc_int_g_needs_reset_num,
 				(v4l2_int_ioctl_func *)ioctl_g_needs_reset}, */
@@ -1006,11 +670,11 @@ static struct v4l2_int_ioctl_desc ov5640_ioctl_desc[] = {
 				(v4l2_int_ioctl_func *)ioctl_try_fmt_cap}, */
 	{vidioc_int_g_fmt_cap_num, (v4l2_int_ioctl_func *) ioctl_g_fmt_cap},
 /*	{vidioc_int_s_fmt_cap_num, (v4l2_int_ioctl_func *) ioctl_s_fmt_cap}, */
-	{vidioc_int_g_parm_num, (v4l2_int_ioctl_func *) ioctl_g_parm},
-	{vidioc_int_s_parm_num, (v4l2_int_ioctl_func *) ioctl_s_parm},
-/*	{vidioc_int_queryctrl_num, (v4l2_int_ioctl_func *)ioctl_queryctrl}, */
+	{vidioc_int_g_parm_num, (v4l2_int_ioctl_func *) ioctl_g_parm},       
+	{vidioc_int_s_parm_num, (v4l2_int_ioctl_func *) ioctl_s_parm},       
+/*	{vidioc_int_queryctrl_num, (v4l2_int_ioctl_func *)ioctl_queryctrl},  */
 	{vidioc_int_g_ctrl_num, (v4l2_int_ioctl_func *) ioctl_g_ctrl},
-	{vidioc_int_s_ctrl_num, (v4l2_int_ioctl_func *) ioctl_s_ctrl},
+/*	{vidioc_int_s_ctrl_num, (v4l2_int_ioctl_func *) ioctl_s_ctrl},       */
 	{vidioc_int_enum_framesizes_num,
 				(v4l2_int_ioctl_func *) ioctl_enum_framesizes},
 //	{vidioc_int_enum_frameintervals_num,
@@ -1046,8 +710,10 @@ static int ov5640_probe(struct i2c_client *client,
 {
 	struct device *dev = &client->dev;
 	int retval;
-//	struct fsl_mxc_camera_platform_data *plat_data = client->dev.platform_data;
 
+	enum ov5640_frame_rate frame_rate;	
+	/* Default camera frame rate is set in probe */
+	frame_rate = ov5640_30_fps;                              // force FPS
 
 	/* request reset pin */
 	rst_gpio = of_get_named_gpio(dev->of_node, "rst-gpios", 0);
@@ -1060,7 +726,6 @@ static int ov5640_probe(struct i2c_client *client,
 	if (retval < 0)
 		return retval;
 
-	pr_err("%s: >>>>  ov5640 camera probe function",__func__);
 
 	/* Set initial values for the sensor struct. */
 	memset(&ov5640_data, 0, sizeof(ov5640_data));
@@ -1095,42 +760,25 @@ static int ov5640_probe(struct i2c_client *client,
 
 
 	clk_prepare_enable(ov5640_data.sensor_clk);
-
-//	ov5640_data.io_init = ov5640_reset;					 // JAD added back in
+	ov5640_data.io_init = ov5640_reset;					 // added back in
 	ov5640_data.i2c_client = client;
-	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // JAD was V4L2_PIX_FMT_UYVY or V4L2_PIX_FMT_RGB24 or V4L2_PIX_FMT_RGB565
-	                                                     // or V4L2_PIX_FMT_YUYV or V4L2_PIX_FMT_YUV420
-	ov5640_data.pix.width  = FOR_ANDROID_WIDTH;                       // JAD was 640
+	ov5640_data.pix.pixelformat = V4L2_PIX_FMT_UYVY;     // was V4L2_PIX_FMT_UYVY
+	ov5640_data.pix.width  = FOR_ANDROID_WIDTH;          // JAD was 640
 	ov5640_data.pix.height =  768;                       // JAD was 480
 	ov5640_data.streamcap.capability = V4L2_MODE_HIGHQUALITY |
 					                   V4L2_CAP_TIMEPERFRAME;
-	ov5640_data.streamcap.capturemode = 0;               // JAD was 1
+	ov5640_data.streamcap.capturemode = 0;               // was 1
 	ov5640_data.streamcap.timeperframe.denominator = DEFAULT_FPS;
 	ov5640_data.streamcap.timeperframe.numerator = 1;
 
-//	ov5640_reset();										// JAD added back in
-	
-
-//	retval = ov5640_read_reg(OV5640_CHIP_ID_HIGH_BYTE, &chip_id_high);
-//	if (retval < 0 || chip_id_high != 0x56) {
-//		pr_warning("camera ov5640_mipi is not found\n");
-//		clk_disable_unprepare(ov5640_data.sensor_clk);
-//		return -ENODEV;
-//	}
-//	retval = ov5640_read_reg(OV5640_CHIP_ID_LOW_BYTE, &chip_id_low);
-//	if (retval < 0 || chip_id_low != 0x40) {
-//		pr_warning("camera ov5640_mipi is not found\n");
-//		clk_disable_unprepare(ov5640_data.sensor_clk);
-//		return -ENODEV;
-//	}
-//
-
+	pr_err(">>>> %s:\n",__func__);
+	ov5640_reset();										// JAD added back in
 	ov5640_int_device.priv = &ov5640_data;
 	retval = v4l2_int_device_register(&ov5640_int_device);
-
 	clk_disable_unprepare(ov5640_data.sensor_clk);
-
 	pr_info("camera ov5640_mipi is found\n");
+	ov5640_init_mode(frame_rate, ov5640_mode_INIT, ov5640_mode_INIT);
+
 	return retval;
 }
 

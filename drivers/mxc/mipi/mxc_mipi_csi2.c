@@ -204,6 +204,7 @@ unsigned int mipi_csi2_dphy_status(struct mipi_csi2_info *info)
 
 	_mipi_csi2_lock(info);
 	status = mipi_csi2_read(info, MIPI_CSI2_PHY_STATE);
+	pr_err("++++ %s  dephy status=%i\n", __func__, status);       //JAD added debug
 	_mipi_csi2_unlock(info);
 
 	return status;
