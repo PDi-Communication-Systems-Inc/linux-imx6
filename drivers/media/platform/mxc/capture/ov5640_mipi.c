@@ -91,7 +91,7 @@ static struct reg_value ub940_init_setting[] = {
  	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
 	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0}, // Sync Configuration                       
  	{0x0065, 0x04, 0, 0}, {0x0064, 0xe0, 0, 0}, // PG select own timing, Disable generator
- //	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
+ 	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
 	{0x0064, 0x14, 0, 0}						// Turn generator off
 };
 
