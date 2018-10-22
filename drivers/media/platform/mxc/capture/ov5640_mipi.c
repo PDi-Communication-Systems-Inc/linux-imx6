@@ -555,7 +555,7 @@ static int ioctl_g_chip_ident(struct v4l2_int_device *s, int *id)
  */
 static int ioctl_init(struct v4l2_int_device *s)
 {
-
+	pr_err(">>>> %s:\n",__func__);
 	return 0;
 }
 
@@ -601,7 +601,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
     if(ret2)
     {
-        printk(KERN_ERR "device 2 write error: %d\n", ret2);
+        printk(KERN_ERR "DS90ub947 write error: %d\n", ret2);
         return ret2;
     }
 
@@ -611,6 +611,16 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
 	ov5640_data.on = true;
 
+	ret = ub9xx_write_reg(0x64, 0x15);            	// turn 940 PG on
+	ret = ub9xx_write_reg(0x64, 0x14);            	// turn 940 PG off
+
+    if(ret)
+    {
+        printk(KERN_ERR "DS90ub940 write error: %d\n", ret2);
+        return ret2;
+    }
+
+	
 	/* mclk */
 	tgt_xclk = ov5640_data.mclk;
 
