@@ -617,7 +617,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
     if(ret)
     {
         printk(KERN_ERR "DS90ub940 write error: %d\n", ret2);
-        return ret2;
+        return ret;
     }
 
 	
