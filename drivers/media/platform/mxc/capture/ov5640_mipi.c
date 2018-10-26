@@ -100,9 +100,6 @@ static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
 static int ov5640_remove(struct i2c_client *client);
 
-static s32 ub9xx_read_reg (u16 reg, u8 *val);
-static s32 ub9xx_write_reg(u16 reg, u8  val);
-
 static const struct i2c_device_id ov5640_id[] = {
 	{"ov5640_mipi", 0},
 	{},
@@ -121,28 +118,39 @@ static struct i2c_driver ov5640_i2c_driver = {
 };
 
 // 74ub9xx write function
-static s32 ub9xx_write_reg(u16 reg, u8 val)
+s32 ub9xx_write_reg(u8 client, u16 reg, u8 val)
 {
+	u8 addr1 = 0;
 	u8 au8Buf[3] = {0};         // 2 address and 1 data value    
 	au8Buf   [0] = reg & 0xff;  // JAD was - reg >> 8
 	au8Buf   [1] = val;         // JAD was - reg & 0xff
 	au8Buf   [2] = val;         // may be able to get rid of this
+
+	addr1 = ov5640_data.i2c_client->addr;			//Save original address
+    ov5640_data.i2c_client->addr = client;			// set the client for the second device
+
 	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {		// JAD was 3
 		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);    // JAD
 		return -1;
 	}
 
+	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
 	return 0;
 }
 
-// 74ub9xx read function
-static s32 ub9xx_read_reg(u16 reg, u8 *val)
+
+// 74ub9xx read function ***********************************************************
+s32 ub9xx_read_reg(u8 client, u16 reg, u8 *val)
 {
+	u8 addr1 = 0;
 	u8 au8RegBuf[2] = {0};        // 2 address and 1 data value  
 	u8 u8RdVal = 0;
 
 	au8RegBuf[0] = reg & 0xff;    // was - reg >> 8
 	au8RegBuf[1] = reg & 0x0000;  // was - reg & 0xff
+
+	addr1 = ov5640_data.i2c_client->addr;			//Save original address
+    ov5640_data.i2c_client->addr = client;			// set the client for the second device
 
 	if (1 != i2c_master_send(ov5640_data.i2c_client, au8RegBuf, 1)) {   // was 2
 		pr_err(">>>> %s: write reg error:reg=%x\n",                     // 
@@ -156,6 +164,7 @@ static s32 ub9xx_read_reg(u16 reg, u8 *val)
 		return -1;
 	}
 	*val = u8RdVal;
+	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
 
 	return u8RdVal;
 }
@@ -201,7 +210,7 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 		Mask     = pModeSetting->u8Mask;
 
 		if (Mask) {
-			retval = ub9xx_read_reg(RegAddr, &RegVal);
+			retval = ub9xx_read_reg(UB940_ADDR, RegAddr, &RegVal);
 
 			if (retval < 0)
 				goto err;
@@ -210,7 +219,7 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 			Val    &= Mask;
 			Val    |= RegVal;
 		}
-		retval = ub9xx_write_reg(RegAddr, Val);
+		retval = ub9xx_write_reg(UB940_ADDR, RegAddr, Val);
 
 		if (retval < 0)
 			goto err;
@@ -586,37 +595,35 @@ static int ioctl_enum_fmt_cap(struct v4l2_int_device *s,
 static int ioctl_dev_init(struct v4l2_int_device *s)
 {
 //	struct sensor_data *sensor = s->priv;
-	u32 tgt_xclk;	/* target xclk */
-	int ret=0, ret2;
+	u8 RegVal= 0;
+	u32 tgt_xclk;		/* target xclk */
+	int ret=0;
+	int retval = 0;
+
 	enum ov5640_frame_rate frame_rate;
 	void *mipi_csi2_info;
 
-// ************************ second device *********************
-    // save the original (device 1) address
-    u8 addr1 = ov5640_data.i2c_client->addr;
-
-	// equivalent of "i2cset -f -y 0 0x10 0x4f 0x40"
-    ov5640_data.i2c_client->addr = 0x10;			// set the client for the second device
-    ret2 = ub9xx_write_reg(0x4f, 0x40);            	// set single pixel mode
-
-    if(ret2)
-    {
-        printk(KERN_ERR "DS90ub947 write error: %d\n", ret2);
-        return ret2;
-    }
-
-    // restore the device 1 address
-    ov5640_data.i2c_client->addr = addr1;
-// ********************** end second device *******************
-
-	ov5640_data.on = true;
-
-	ret = ub9xx_write_reg(0x64, 0x15);            	// turn 940 PG on
-	ret = ub9xx_write_reg(0x64, 0x14);            	// turn 940 PG off
+	/* DS90UB947 "i2cset -f -y 0 0x10 0x4f 0x40"  */
+    ret = ub9xx_write_reg(UB947_ADDR, 0x4f, 0x40);     // set single pixel mode
 
     if(ret)
     {
-        printk(KERN_ERR "DS90ub940 write error: %d\n", ret2);
+        printk(KERN_ERR "DS90ub947 write error: %d\n", ret);
+        return ret;
+    }
+
+	/* Show PCLK status in 947 part*/
+	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+
+	ov5640_data.on = true;
+	
+	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
+	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
+
+    if(ret)
+    {
+        printk(KERN_ERR "DS90ub940 write error: %d\n", ret);
         return ret;
     }
 
@@ -625,7 +632,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	tgt_xclk = ov5640_data.mclk;
 
 	/* Default camera frame rate is set in probe */
-	frame_rate = ov5640_30_fps;                              // force FPS
+	frame_rate = ov5640_30_fps;                         // force FPS
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* enable mipi csi2 */
@@ -636,7 +643,6 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 		       __func__, __FILE__);
 		return -EPERM;
 	}
-	pr_err(">>>> %s:\n",__func__);
 
 	return ret;
 }
