@@ -24,35 +24,38 @@
 
 #define	MIPI_CSI2_VERSION		MIPI_CSI2_REG(0x000)
 #define	MIPI_CSI2_N_LANES		MIPI_CSI2_REG(0x004)
-#define	MIPI_CSI2_PHY_SHUTDOWNZ		MIPI_CSI2_REG(0x008)
+#define	MIPI_CSI2_PHY_SHUTDOWNZ	MIPI_CSI2_REG(0x008)
 #define	MIPI_CSI2_DPHY_RSTZ		MIPI_CSI2_REG(0x00c)
-#define	MIPI_CSI2_CSI2_RESETN		MIPI_CSI2_REG(0x010)
+#define	MIPI_CSI2_CSI2_RESETN	MIPI_CSI2_REG(0x010)
 #define	MIPI_CSI2_PHY_STATE		MIPI_CSI2_REG(0x014)
-#define	MIPI_CSI2_DATA_IDS_1		MIPI_CSI2_REG(0x018)
-#define	MIPI_CSI2_DATA_IDS_2		MIPI_CSI2_REG(0x01c)
+#define	MIPI_CSI2_DATA_IDS_1	MIPI_CSI2_REG(0x018)
+#define	MIPI_CSI2_DATA_IDS_2	MIPI_CSI2_REG(0x01c)
 #define	MIPI_CSI2_ERR1			MIPI_CSI2_REG(0x020)
 #define	MIPI_CSI2_ERR2			MIPI_CSI2_REG(0x024)
 #define	MIPI_CSI2_MASK1			MIPI_CSI2_REG(0x028)
 #define	MIPI_CSI2_MASK2			MIPI_CSI2_REG(0x02c)
-#define	MIPI_CSI2_PHY_TST_CTRL0		MIPI_CSI2_REG(0x030)
-#define	MIPI_CSI2_PHY_TST_CTRL1		MIPI_CSI2_REG(0x034)
+#define	MIPI_CSI2_PHY_TST_CTRL0	MIPI_CSI2_REG(0x030)
+#define	MIPI_CSI2_PHY_TST_CTRL1	MIPI_CSI2_REG(0x034)
 #define	MIPI_CSI2_SFT_RESET		MIPI_CSI2_REG(0xf00)
 
 /* mipi data type */
-#define MIPI_DT_YUV420		0x18 /* YYY.../UYVY.... */
+#define MIPI_DT_YUV420			0x18 /* YYY.../UYVY.... */
 #define MIPI_DT_YUV420_LEGACY	0x1a /* UYY.../VYY...   */
-#define MIPI_DT_YUV422		0x1e /* UYVY...		*/
-#define MIPI_DT_RGB444		0x20
-#define MIPI_DT_RGB555		0x21
-#define MIPI_DT_RGB565		0x22
-#define MIPI_DT_RGB666		0x23
-#define MIPI_DT_RGB888		0x24
-#define MIPI_DT_RAW6		0x28
-#define MIPI_DT_RAW7		0x29
-#define MIPI_DT_RAW8		0x2a
-#define MIPI_DT_RAW10		0x2b
-#define MIPI_DT_RAW12		0x2c
-#define MIPI_DT_RAW14		0x2d
+#define MIPI_DT_YUV422			0x1e /* UYVY...		    */
+#define MIPI_DT_RGB444			0x20
+#define MIPI_DT_RGB555			0x21
+#define MIPI_DT_RGB565			0x22
+#define MIPI_DT_RGB666			0x23
+#define MIPI_DT_RGB888			0x24
+#define MIPI_DT_RAW6			0x28
+#define MIPI_DT_RAW7			0x29
+#define MIPI_DT_RAW8			0x2a
+#define MIPI_DT_RAW10			0x2b
+#define MIPI_DT_RAW12			0x2c
+#define MIPI_DT_RAW14			0x2d
+
+#define UB947_ADDR				0x10	// DS90UB947 I2C address
+#define UB940_ADDR				0x2c	// DS90UB940 I2C address
 
 
 struct mipi_csi2_info;
@@ -89,5 +92,8 @@ int mipi_csi2_pixelclk_enable(struct mipi_csi2_info *info);
 void mipi_csi2_pixelclk_disable(struct mipi_csi2_info *info);
 
 int mipi_csi2_reset(struct mipi_csi2_info *info);
+
+s32 ub9xx_read_reg (u8 client, u16 reg, u8 *val);  //JAD
+s32 ub9xx_write_reg(u8 client, u16 reg, u8  val);  //JAD
 
 #endif
