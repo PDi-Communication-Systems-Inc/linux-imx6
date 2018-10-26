@@ -82,8 +82,6 @@ static void dbg_show_in_fps()
 
 	rem = div64_ul(temp_time, total_time);
 
-//	pr_err("++++ NXP Total F:%d, IN@ %lld fps Total time %lld\n",
-//			no_of_frame, rem, total_time);
 }
 
 static void dbg_measure_in_fps()
@@ -103,10 +101,7 @@ static void dbg_measure_in_fps()
 		/*Measure in MS*/
 		actual_time = ktime_to_ms(ktime_sub(end, last));
 		total_time = ktime_to_ms(ktime_sub(end, start));
-/*
-		pr_err("++++ F:%d, IRQ:@ %u ms\n",
-				no_of_frame, (unsigned int)actual_time);
-*/
+
 	} else {
 		/*Measure in NS*/
 		actual_time = ktime_to_ns(ktime_sub(end, last));
@@ -155,13 +150,12 @@ static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 
 	if (cam->usefg == 1) {
 		directly_display(cam);
-//	    pr_err("++++ %s usefg=1 \n", __func__);    //JAD
 		cam->direct_callback(0, cam);
 		return IRQ_HANDLED;
 		} 
 	else {
 		cam->enc_callback(irq, dev_id);
-		pr_err("++++ %s usefg=0 \n", __func__);    //JAD
+		pr_err("++++ %s usefg=0 \n", __func__);    		//JAD
 		}
 	return IRQ_HANDLED;
 }
@@ -351,7 +345,7 @@ static void get_disp_ipu(cam_data *cam)
 static int foreground_start(void *private)
 {
 	cam_data *cam = (cam_data *) private;
-	int err = 0, i = 0, screen_size;            //JAD where is this initialized
+	int err = 0, i = 0, screen_size;            //JAD where is screen_size initialized
 	char *base;
 	int bpp;
 
@@ -429,8 +423,8 @@ static int foreground_start(void *private)
 
 	fbvar.bits_per_pixel = bpp;
 	fbvar.xres = fbvar.xres_virtual = FOR_ANDROID_WIDTH;
-	fbvar.yres = 768;//cam->win.w.height;
-	fbvar.yres_virtual = 768 * 3;//cam->win.w.height * 3;
+	fbvar.yres = 768;				//cam->win.w.height;
+	fbvar.yres_virtual = 768 * 3;	//cam->win.w.height * 3;
 	fbvar.yoffset = 0;
 	fbvar.vmode &= ~FB_VMODE_YWRAP;
 	fbvar.accel_flags = FB_ACCEL_TRIPLE_FLAG;
@@ -617,7 +611,13 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
-	pr_err("++++ %s\n", __func__);
+	u8 RegVal= 0;
+	int retval = 0;									//JAD
+	
+	/* Show PCLK status in 947 part*/
+	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);		//JAD
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
@@ -640,7 +640,7 @@ static int csi_enc_disable_csi(void *private)
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
     ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
-	pr_err("++++%s\n", __func__);
+	pr_err("++++ %s\n", __func__);
 	dbg_show_in_fps();
 
 	return ipu_disable_csi(cam->ipu, cam->csi);
