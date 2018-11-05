@@ -135,6 +135,7 @@ s32 ub9xx_write_reg(u8 client, u16 reg, u8 val)
 	}
 
 	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
+//	msleep(10);
 	return 0;
 }
 
@@ -605,7 +606,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
 	/* DS90UB947 "i2cset -f -y 0 0x10 0x4f 0x40"  */
     ret = ub9xx_write_reg(UB947_ADDR, 0x4f, 0x40);     // set single pixel mode
-
+	
     if(ret)
     {
         printk(KERN_ERR "DS90ub947 write error: %d\n", ret);
@@ -614,12 +615,16 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 
 	/* Show PCLK status in 947 part*/
 	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);
-	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 
 	ov5640_data.on = true;
 	
 	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
 	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
+	ret = ub9xx_write_reg(UB947_ADDR, 0x44, 0x01);      // turn AEQ off
+	ret = ub9xx_write_reg(UB947_ADDR, 0x44, 0x00);      // turn AEQ on
+	
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 
     if(ret)
     {
