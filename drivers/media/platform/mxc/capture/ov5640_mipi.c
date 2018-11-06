@@ -621,8 +621,8 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	
 	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
 	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
-	ret = ub9xx_write_reg(UB947_ADDR, 0x44, 0x01);      // turn AEQ off
-	ret = ub9xx_write_reg(UB947_ADDR, 0x44, 0x00);      // turn AEQ on
+	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
 	
 	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 
