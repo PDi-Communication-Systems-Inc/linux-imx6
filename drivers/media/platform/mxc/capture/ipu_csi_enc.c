@@ -622,9 +622,9 @@ static int csi_enc_enable_csi(void *private)
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
-	ub9xx_write_reg(UB947_ADDR, 0x44, 0x01);      // turn AEQ off
-	ub9xx_write_reg(UB947_ADDR, 0x44, 0x00);      // turn AEQ on
-
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+	
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
