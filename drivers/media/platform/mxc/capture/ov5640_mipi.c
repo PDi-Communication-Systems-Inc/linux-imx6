@@ -75,23 +75,23 @@ static struct sensor_data ov5640_data;
 // For RGB888 instead of YUV422, change 0x006b from 0x50 to 0x00
 // For Stripe bars instead of sequence, 0x0064, bit 2=1 (11->15)
 static struct reg_value ub940_init_setting[] = {
-    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
-	{0x006d, 0x00, 0, 0},						
+    {0x006a, 0x02, 0, 0}, {0x006b, 0x50, 0, 0},	// Set Continuous clock, YUV422_8
+	{0x006c, 0x2e, 0, 0}, {0x006d, 0x00, 0, 0}, // Virtual Channel ID=0
 												// Set Pattern Generator (indirect Registers)  
-	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
-	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0}, // Total  Frame Size 1                     
-	{0x0066, 0x05, 0, 0}, {0x0067, 0x16, 0, 0}, // Total  Frame Size 2                        
- 	{0x0066, 0x06, 0, 0}, {0x0067, 0x32, 0, 0}, // Total  Frame Size 3
- 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
-	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
- 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
-	{0x0066, 0x0a, 0, 0}, {0x0067, 0x70, 0, 0},	// Horiz  Sync Width                       
- 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
-	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
- 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
-	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0}, // Sync Configuration                       
- 	{0x0065, 0x04, 0, 0}, {0x0064, 0xe0, 0, 0}, // PG select own timing, Disable generator
- 	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
+//	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
+//	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0}, // Total  Frame Size 1                     
+//	{0x0066, 0x05, 0, 0}, {0x0067, 0x16, 0, 0}, // Total  Frame Size 2                        
+// 	{0x0066, 0x06, 0, 0}, {0x0067, 0x32, 0, 0}, // Total  Frame Size 3
+// 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
+//	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
+// 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
+//	{0x0066, 0x0a, 0, 0}, {0x0067, 0x70, 0, 0},	// Horiz  Sync Width                       
+// 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
+//	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
+// 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
+//	{0x0066, 0x0e, 0, 0}, {0x0067, 0x02, 0, 0}, // Sync Configuration                       
+// 	{0x0065, 0x04, 0, 0}, {0x0064, 0xe0, 0, 0}, // PG select own timing, Disable generator
+// 	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
 	{0x0064, 0x14, 0, 0}						// Turn generator off
 };
 
@@ -121,21 +121,21 @@ static struct i2c_driver ov5640_i2c_driver = {
 s32 ub9xx_write_reg(u8 client, u16 reg, u8 val)
 {
 	u8 addr1 = 0;
-	u8 au8Buf[3] = {0};         // 2 address and 1 data value    
-	au8Buf   [0] = reg & 0xff;  // JAD was - reg >> 8
-	au8Buf   [1] = val;         // JAD was - reg & 0xff
-	au8Buf   [2] = val;         // may be able to get rid of this
+	u8 au8Buf[3] = {0};         			// 2 address and 1 data value    
+	au8Buf   [0] = reg & 0xff;  			// JAD was - reg >> 8
+	au8Buf   [1] = val;         			// JAD was - reg & 0xff
+	au8Buf   [2] = val;         			// may be able to get rid of this
 
-	addr1 = ov5640_data.i2c_client->addr;			//Save original address
-    ov5640_data.i2c_client->addr = client;			// set the client for the second device
+	addr1 = ov5640_data.i2c_client->addr;	//Save original address
+    ov5640_data.i2c_client->addr = client;	// set the client for the second device
 
 	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {		// JAD was 3
 		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);    // JAD
 		return -1;
 	}
 
-	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
-//	msleep(10);
+	ov5640_data.i2c_client->addr = addr1;   //JAD restore original address
+
 	return 0;
 }
 
@@ -144,14 +144,14 @@ s32 ub9xx_write_reg(u8 client, u16 reg, u8 val)
 s32 ub9xx_read_reg(u8 client, u16 reg, u8 *val)
 {
 	u8 addr1 = 0;
-	u8 au8RegBuf[2] = {0};        // 2 address and 1 data value  
+	u8 au8RegBuf[2] = {0};        			// 2 address and 1 data value  
 	u8 u8RdVal = 0;
 
-	au8RegBuf[0] = reg & 0xff;    // was - reg >> 8
-	au8RegBuf[1] = reg & 0x0000;  // was - reg & 0xff
+	au8RegBuf[0] = reg & 0xff;    			// was - reg >> 8
+	au8RegBuf[1] = reg & 0x0000;  			// was - reg & 0xff
 
-	addr1 = ov5640_data.i2c_client->addr;			//Save original address
-    ov5640_data.i2c_client->addr = client;			// set the client for the second device
+	addr1 = ov5640_data.i2c_client->addr;	//Save original address
+    ov5640_data.i2c_client->addr = client;	// set the client for the second device
 
 	if (1 != i2c_master_send(ov5640_data.i2c_client, au8RegBuf, 1)) {   // was 2
 		pr_err(">>>> %s: write reg error:reg=%x\n",                     // 
@@ -178,7 +178,8 @@ static void ov5640_reset(void)
   	gpio_set_value(rst_gpio, 0); 
   	msleep(1); 
  
-  	gpio_set_value(rst_gpio, 1); 
+  	gpio_set_value(rst_gpio, 1);
+	pr_err(">>>> %s: Bridge Board Reset \n",__func__);    // JAD	
 } 
 
 int OV5640_get_sysclk(void)
@@ -239,96 +240,73 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	s32 ArySize = 0;
 	int retval  = 0;
 	void *mipi_csi2_info;
-	u32 mipi_reg, msec_wait4stable = 0;
+	u32 msec_wait4stable = 0;
 
 	pr_err (">>>> ov5640_init_mode: build date = %s %s\n", __DATE__, __TIME__);
 	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
     pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // 
-    retval = ov5640_download_firmware(pModeSetting, ArySize);   // 
-
+	
 	mipi_csi2_info = mipi_csi2_get_info();
 
-	/* initial mipi dphy */
+	/* initialize mipi dphy */
 	if (mipi_csi2_info) {
 
 		if (!mipi_csi2_get_status(mipi_csi2_info))
 		{
-			pr_err (">>>> Debug ov5640 init mode: Line: %i\n", __LINE__);
 			mipi_csi2_enable(mipi_csi2_info);
 		}
 
 		if (mipi_csi2_get_status(mipi_csi2_info)) {
-			mipi_csi2_set_lanes(mipi_csi2_info);
 
 			/*Only reset MIPI CSI2 HW at sensor initialize*/
 			if (mode == ov5640_mode_INIT)
 			{
-				pr_err (">>>> Debug ov5640 init mode: Line: %i\n", __LINE__);				
+				pr_err (">>>> MIPI  CSI2 HW Reset \n");				
 				mipi_csi2_reset(mipi_csi2_info);
 			}
 
 			mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);  // force type MIPI_DT_YUV422
+			mipi_csi2_set_lanes(mipi_csi2_info);
 			
 		} else {
 			pr_err(">>>> %s: Can not enable mipi csi2 driver!\n",__FILE__);
 			return -1;
 		}
 	} else {
-		printk(KERN_ERR "Fail to get mipi_csi2_info!\n");
+		printk(KERN_ERR "Failed to get mipi_csi2_info!\n");
 		return -1;
 	}
 
 	if (mode == ov5640_mode_INIT) {
+		ov5640_data.pix.width  =  FOR_ANDROID_WIDTH;				// was 640
+		ov5640_data.pix.height =   768;   							// was 480
 
-		  ov5640_data.pix.width  =  FOR_ANDROID_WIDTH;	// was 640
-		  ov5640_data.pix.height =   768;   			// was 480
-
-		if (retval < 0){
+		retval = ov5640_download_firmware(pModeSetting, ArySize);   // 
+		if (retval < 0)
 			goto err;
+
+	
+		/* DS90UB947 "i2cset -f -y 0 0x10 0x4f 0x40"  */
+		retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);     	// set single pixel mode
+		pr_err (">>>> UB947 Set Single Pixel Mode \n");	
+		if (retval < 0)
+			goto err;
+		
 		}
 
-	}
-
-	if (retval < 0)
-		goto err;
-
-	msec_wait4stable = 300;                         
+	msec_wait4stable = 300;                         				// was 300
 	msleep(msec_wait4stable);
 
-	if (mipi_csi2_info) {
-		unsigned int i;
-		i = 0;
-		/* wait for mipi sensor ready */
-		mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
-		pr_err("++++ %s mipi_reg=%x \n", __func__, mipi_reg);   //JAD added debug
-		while ((mipi_reg != 0x200) && (i < 10)) { 				//original == 0x330 changed to 200
-			mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);
+	/* see if stream ready */
+	retval=mipi_csi2_run(mipi_csi2_info);
 
-			i++;
-			msleep(10);
-		}
-		if (i >= 10) {
-
-			return -1;
+	if (retval < 0) {
+		pr_err("++++  mipi csi2 not streaming!\n");
+		goto err;
 		}
 
-		i = 0;
-
-		/* wait for mipi stable */
-		mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
-
-		while ((mipi_reg != 0x0) && (i < 10)) {
-			mipi_reg = mipi_csi2_get_error1(mipi_csi2_info);
-			i++;
-			msleep(10);
-		}
-		if (i >= 10) {
-			pr_err("mipi csi2 can not reveive data correctly!\n");
-			return -1;
-		}
-	}
 err:
 	return retval;
 }
@@ -565,7 +543,6 @@ static int ioctl_g_chip_ident(struct v4l2_int_device *s, int *id)
  */
 static int ioctl_init(struct v4l2_int_device *s)
 {
-	pr_err(">>>> %s:\n",__func__);
 	return 0;
 }
 
@@ -604,29 +581,20 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
 	enum ov5640_frame_rate frame_rate;
 	void *mipi_csi2_info;
 
-	/* DS90UB947 "i2cset -f -y 0 0x10 0x4f 0x40"  */
-    ret = ub9xx_write_reg(UB947_ADDR, 0x4f, 0x40);     // set single pixel mode
-	
     if(ret)
     {
         printk(KERN_ERR "DS90ub947 write error: %d\n", ret);
         return ret;
     }
 
+	ov5640_data.on = true;
+
 	/* Show PCLK status in 947 part*/
 	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-
-	ov5640_data.on = true;
-	
-	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
-	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
-	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
-	
 	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 
-    if(ret)
+ 
+	if(ret)
     {
         printk(KERN_ERR "DS90ub940 write error: %d\n", ret);
         return ret;
@@ -797,7 +765,7 @@ static int ov5640_probe(struct i2c_client *client,
 	ov5640_int_device.priv = &ov5640_data;
 	retval = v4l2_int_device_register(&ov5640_int_device);
 	clk_disable_unprepare(ov5640_data.sensor_clk);
-	pr_info("camera ov5640_mipi is found\n");
+	pr_info(">>>> camera ov5640_mipi is found\n");
 	ov5640_init_mode(frame_rate, ov5640_mode_INIT, ov5640_mode_INIT);
 
 	return retval;

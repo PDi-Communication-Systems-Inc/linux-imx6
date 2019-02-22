@@ -42,6 +42,7 @@
 #include <linux/fsl_devices.h>
 #include "mxc_v4l2_capture.h"
 #include "ipu_prp_sw.h"
+#include <linux/mipi_csi2.h>
 
 #define init_MUTEX(sem)         sema_init(sem, 1)
 
@@ -501,6 +502,10 @@ static int mxc_streamon(cam_data *cam)
 	}
 
 	cam->capture_on = true;
+	pr_err("~~~~ %s: ping_ping_csi = %x\n",__func__,cam->ping_pong_csi);  		//debug
+	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x4b); 							// Force Lock Indication Low
+	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x43);      						// Release the forced Lock status
+	pr_err("~~~~ %s: Force Lock \n",__func__);
 
 	return err;
 }
