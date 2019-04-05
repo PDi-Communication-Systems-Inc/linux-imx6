@@ -79,9 +79,8 @@ bool mipi_csi2_enable(struct mipi_csi2_info *info)
 		info->mipi_en = true;
 		clk_prepare_enable(info->cfg_clk);
 		clk_prepare_enable(info->dphy_clk);
-		pr_err (">>>> MIPI  CSI2 Enable \n");
 	} else
-		mipi_dbg(">>>> mipi csi2 already enabled!\n");
+		mipi_dbg("mipi csi2 already enabled!\n");
 
 	status = info->mipi_en;
 
@@ -205,6 +204,7 @@ unsigned int mipi_csi2_dphy_status(struct mipi_csi2_info *info)
 	
 	_mipi_csi2_lock(info);
 	status = mipi_csi2_read(info, MIPI_CSI2_PHY_STATE);
+	pr_err("++++ %s  dephy status=%i\n", __func__, status);       //JAD added debug
 	_mipi_csi2_unlock(info);
 
 	return status;
@@ -304,54 +304,6 @@ int mipi_csi2_reset(struct mipi_csi2_info *info)
 	return 0;
 }
 EXPORT_SYMBOL(mipi_csi2_reset);
-
-
-/*!
- * This function is called to check status for a running
- * mipi CSI2 stream on the camera input
- * @param	info		mipi csi2 hander
- * @return      Returns 0 on success or negative error code on fail
- */
-int mipi_csi2_run(struct mipi_csi2_info *info)
-{
-
-	unsigned int i;
-	u32 mipi_reg1;
-	u32 mipi_reg2;
-	i = 0;
-																			//wait for mipi stream ready 
-	mipi_reg1 = mipi_csi2_dphy_status(info);
-	mipi_reg2 = mipi_csi2_get_error1(info);
-	pr_err("^^^^ %s dphy_status = %x error1 = %x \n",
-	        __func__, mipi_reg1, mipi_reg2);  								//added debug
-
-	while (((mipi_reg1 != 0x03f0)||(mipi_reg2 != 0x0000)) && (i < 10)) { 	//original == 0x330
-		pr_err("^^^^ %s dphy_status = %x error1 = %x i = %x \n",
-		        __func__, mipi_reg1, mipi_reg2, i);  						//added debug
-
-		i++;
-			
-		ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x4b); 					// Force Lock Indication Low
-		ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x43);      				// Release the forced Lock status
-			
-		msleep(10);
-		mipi_reg1 = mipi_csi2_dphy_status(info);
-		mipi_reg2 = mipi_csi2_get_error1(info);
-
-		}
-			
-		pr_err("^^^^ %s dphy_status = %x error1 = %x \n",
-		        __func__, mipi_reg1, mipi_reg2);  							//debug
-
-	if (i >= 10) {
-		pr_err("^^^^  mipi csi2 can't reveive data correctly!\n");
-		return -1;
-	}	
-
-	return 0;
-}
-EXPORT_SYMBOL(mipi_csi2_run);
-
 
 /*!
  * This function is called to get mipi csi2 info.

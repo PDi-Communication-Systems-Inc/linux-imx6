@@ -31,7 +31,6 @@
 #include <linux/of.h>
 #include <linux/regulator/consumer.h>
 #include <linux/sched.h>
-#include <linux/mipi_csi2.h>
 
 #include "mxc_v4l2_capture.h"
 #include "fsl_csi.h"
@@ -108,9 +107,6 @@ static irqreturn_t csi_irq_handler(int irq, void *data)
 		g_callback(g_callback_data, status);
 
 	pr_debug("CSI status = 0x%08lX\n", status);
-	pr_err("~~~~ %s:  ping_pong_csi = %x\n",__func__,cam->ping_pong_csi);  	//debug
-	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x4b); 						// Force Lock Indication Low
-	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x43);      					// Release the forced Lock status
 
 	return IRQ_HANDLED;
 }

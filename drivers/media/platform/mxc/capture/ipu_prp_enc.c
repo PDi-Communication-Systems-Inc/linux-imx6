@@ -319,7 +319,7 @@ static int prp_enc_setup(cam_data *cam)
  *
  * @return  status
  */
-static int prp_enc_eba_update(void *private, dma_addr_t eba, int *dummy )
+static int prp_enc_eba_update(void *private, dma_addr_t eba)
 {
 	int err = 0;
 	cam_data *cam = (cam_data *) private;

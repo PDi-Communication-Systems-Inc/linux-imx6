@@ -56,7 +56,6 @@
 
 #define UB947_ADDR				0x10	// DS90UB947 I2C address
 #define UB940_ADDR				0x2c	// DS90UB940 I2C address
-#define UB940_AEQ_REG			0x0040	// DS90UB940 (hidden) REG
 
 
 struct mipi_csi2_info;
@@ -94,7 +93,6 @@ void mipi_csi2_pixelclk_disable(struct mipi_csi2_info *info);
 
 int mipi_csi2_reset(struct mipi_csi2_info *info);
 
-int mipi_csi2_run(struct mipi_csi2_info *info);
 s32 ub9xx_read_reg (u8 client, u16 reg, u8 *val);  //JAD
 s32 ub9xx_write_reg(u8 client, u16 reg, u8  val);  //JAD
 

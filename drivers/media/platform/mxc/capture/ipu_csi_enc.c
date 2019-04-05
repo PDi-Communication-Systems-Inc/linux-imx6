@@ -40,10 +40,10 @@
 #include <linux/console.h>
 static ktime_t start, last;
 static s64 total_time;
-static unsigned int no_of_frame = 0;
+static unsigned int no_of_frame;
 
-static int irq_start = 0;
-static int measure_in_ms = 1;
+static int irq_start;
+static int measure_in_ms;
 
 #ifdef CAMERA_DBG
 	#define CAMERA_TRACE(x) (printk)x
@@ -140,22 +140,23 @@ static void directly_display(cam_data *cam)
  */
 static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
-//	dbg_measure_in_fps();
-	if (!(irq==0))
-	pr_err("++++ CSI0 callback - irq = %x\n",irq);       //debug
-
 	cam_data *cam = (cam_data *) dev_id;
+	dbg_measure_in_fps();
 
-	if (cam->enc_callback == NULL)
+	if (cam->enc_callback == NULL){
+		pr_err("++++ %s callback=null \n", __func__);	//JAD
 		return IRQ_HANDLED;
+		}
 
 	if (cam->usefg == 1) {
-				cam->direct_callback(0, cam);
-				directly_display(cam);
+		directly_display(cam);
+		cam->direct_callback(0, cam);
+		return IRQ_HANDLED;
 		} 
-	else 
+	else {
 		cam->enc_callback(irq, dev_id);
-
+		pr_err("++++ %s usefg=0 \n", __func__);    		//JAD
+		}
 	return IRQ_HANDLED;
 }
 
@@ -177,7 +178,7 @@ static int csi_enc_setup(cam_data *cam)
 	int ipu_id;
 	int csi_id;
 #endif
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	CAMERA_TRACE("In csi_enc_setup\n");
 	if (!cam) {
 		printk(KERN_ERR "cam private is NULL\n");
@@ -306,7 +307,7 @@ static int csi_enc_eba_update(struct ipu_soc *ipu, dma_addr_t eba,
 			      int *buffer_num)
 {
 	int err = 0;
-//	pr_err("---- %s: \n",__func__);  					//debug
+
 	pr_debug("eba %x\n", eba);
 	err = ipu_update_channel_buffer(ipu, CSI_MEM, IPU_OUTPUT_BUFFER,
 					*buffer_num, eba);
@@ -344,10 +345,10 @@ static void get_disp_ipu(cam_data *cam)
 static int foreground_start(void *private)
 {
 	cam_data *cam = (cam_data *) private;
-	int err = 0, i = 0, screen_size = 0;            //JAD where is screen_size initialized
+	int err = 0, i = 0, screen_size;            //JAD where is screen_size initialized
 	char *base;
 	int bpp;
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	if (!cam) {
 		printk(KERN_ERR "private is NULL\n");
 		return -EIO;
@@ -479,7 +480,7 @@ static int foreground_stop(void *private)
 
 	/*csi_buffer_num = 0;*/
 	buffer_num = 0;
-	pr_err("---- %s: \n",__FILE__);  					//debug
+
 	for (i = 0; i < num_registered_fb; i++) {
 		char *idstr = registered_fb[i]->fix.id;
 		if (((strcmp(idstr, "DISP3 FG") == 0)) ||
@@ -519,7 +520,7 @@ static int csi_enc_enabling_tasks(void *private)
 	cam_data *cam = (cam_data *) private;
 	int err = 0;
 	CAMERA_TRACE("IPU:In csi_enc_enabling_tasks\n");
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	cam->dummy_frame.vaddress = dma_alloc_coherent(0,
 			       PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage),
 			       &cam->dummy_frame.paddress,
@@ -538,7 +539,7 @@ static int csi_enc_enabling_tasks(void *private)
 	err = ipu_request_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF,
 			      csi_enc_callback, 0, "Mxc Camera", cam);
 	if (err != 0) {
-		printk(KERN_ERR "Error registering IPU_IRQ_CSI0_OUT_EOF irq\n");  // modified
+		printk(KERN_ERR "Error registering rot irq\n");
 		return err;
 	}
 
@@ -569,7 +570,7 @@ static int csi_enc_disabling_tasks(void *private)
 	int ipu_id;
 	int csi_id;
 #endif
-	pr_err("---- %s: \n",__FILE__);  					//debug
+
 	err = ipu_disable_channel(cam->ipu, CSI_MEM, true);
 
 	ipu_uninit_channel(cam->ipu, CSI_MEM);
@@ -610,36 +611,19 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
-	cam_data *cam = (cam_data *) private;
-		
 	u8 RegVal= 0;
-	int retval = 0;	
-	int i = 0;
-
-	pr_err("---- %s: \n",__func__);  							//debug	
-	/* Show PCLK status in 947 part*/
-	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);		//
-	pr_err("---- %s: UB947 General Status = %x \n",__func__,retval);
-
-	ub9xx_write_reg(UB940_ADDR, 0x006c, 0x16);      			// CSI ind address register
-	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);		// CSI ind data register
-
-	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x4b); 			// Force Lock Indication Low
-	ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x43);      		// Release the forced Lock status
+	int retval = 0;									//JAD
 	
-	while ((retval == 2)&& (i<5)){								// wait until CSI is active
-		/* Read CSI Pass register (0)*/
-		ub9xx_write_reg(UB940_ADDR, 0x006c, 0x16);      		// CSI ind address register
-		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// CSI ind data register
-		pr_err("---- %s: Waiting for CSI2 Pass = %x i = %x\n",__func__,retval, i);
-		i+=1;
-	}
-	if (i>=5){
-		pr_err("---- %s: Force Lock i = %x\n",__func__,i);
-		ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x4b); 		// Force Lock Indication Low
-		ub9xx_write_reg(UB940_ADDR, UB940_AEQ_REG, 0x43);      	// Release the forced Lock status
-	}
-	pr_err("---- %s: UB940 CSI Pass register = %x \n",__func__,retval);
+	/* Show PCLK status in 947 part*/
+	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);		//JAD
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+
+	cam_data *cam = (cam_data *) private;
+	irq_start = 1;
+	no_of_frame = 0;
+	measure_in_ms = 1;
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
 	
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
@@ -653,7 +637,7 @@ static int csi_enc_enable_csi(void *private)
 static int csi_enc_disable_csi(void *private)
 {
 	cam_data *cam = (cam_data *) private;
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	/* free csi eof irq firstly.
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
@@ -662,7 +646,6 @@ static int csi_enc_disable_csi(void *private)
 	dbg_show_in_fps();
 
 	return ipu_disable_csi(cam->ipu, cam->csi);
-
 }
 
 /*!
@@ -676,7 +659,7 @@ int csi_enc_select(void *private)
 {
 	cam_data *cam = (cam_data *) private;
 	int err = 0;
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	if (cam) {
 		cam->enc_update_eba = csi_enc_eba_update;
 		cam->enc_enable = csi_enc_enabling_tasks;
@@ -702,7 +685,7 @@ int csi_enc_deselect(void *private)
 {
 	cam_data *cam = (cam_data *) private;
 	int err = 0;
-	pr_err("---- %s: \n",__func__);  					//debug
+
 	if (cam) {
 		cam->enc_update_eba = NULL;
 		cam->enc_enable = NULL;
