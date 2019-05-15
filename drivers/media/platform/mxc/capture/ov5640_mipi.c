@@ -79,6 +79,28 @@ static struct reg_value ub940_init_setting[] = {
 	{0x006d, 0x00, 0, 0},						
 												// Set Pattern Generator (indirect Registers)  
 	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
+	{0x0066, 0x04, 0, 0}, {0x0067, 0x00, 0, 0}, // Total  Frame Size 1                     
+	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0}, // Total  Frame Size 2                        
+ 	{0x0066, 0x06, 0, 0}, {0x0067, 0x31, 0, 0}, // Total  Frame Size 3
+ 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
+	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
+ 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
+	{0x0066, 0x0a, 0, 0}, {0x0067, 0x07, 0, 0},	// Horiz  Sync Width                       
+ 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
+	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
+ 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
+	{0x0066, 0x0e, 0, 0}, {0x0067, 0x00, 0, 0}, // Sync Configuration                       
+ 	{0x0065, 0x04, 0, 0}, {0x0064, 0xb0, 0, 0}, // PG select own timing, Disable generator
+ 	{0x0064, 0xb0, 0, 0}, {0x0064, 0xb1, 0, 0}, // White/Black Turn generator on and then	
+//	{0x0064, 0x14, 0, 0}						// Turn generator off
+};
+//
+// This was the original code.
+/*static struct reg_value ub940_init_setting[] = {
+    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
+	{0x006d, 0x00, 0, 0},						
+												// Set Pattern Generator (indirect Registers)  
+	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
 	{0x0066, 0x04, 0, 0}, {0x0067, 0xc5, 0, 0}, // Total  Frame Size 1                     
 	{0x0066, 0x05, 0, 0}, {0x0067, 0x16, 0, 0}, // Total  Frame Size 2                        
  	{0x0066, 0x06, 0, 0}, {0x0067, 0x32, 0, 0}, // Total  Frame Size 3
@@ -94,7 +116,7 @@ static struct reg_value ub940_init_setting[] = {
  	{0x0064, 0x14, 0, 0}, {0x0064, 0x15, 0, 0}, // White/Black Turn generator on and then	
 	{0x0064, 0x14, 0, 0}						// Turn generator off
 };
-
+*/
 
 static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
