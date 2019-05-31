@@ -612,19 +612,26 @@ static int csi_enc_disabling_tasks(void *private)
 static int csi_enc_enable_csi(void *private)
 {
 	u8 RegVal= 0;
-	int retval = 0;									//JAD
+	int retval = 0;											//JAD
 	
 	/* Show PCLK status in 947 part*/
-	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);		//JAD
-	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
+//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+	
+
+	ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, ind address
+	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+	pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
 
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
 	
+//	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+//	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+ 	
+
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
