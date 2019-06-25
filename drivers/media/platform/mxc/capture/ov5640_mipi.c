@@ -90,7 +90,7 @@ static struct reg_value ub940_init_setting[] = {
 	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
  	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
 	{0x0066, 0x0e, 0, 0}, {0x0067, 0x00, 0, 0}, // Sync Configuration                       
- 	{0x0065, 0x04, 0, 0}, {0x0064, 0xb0, 0, 0}, // PG select own timing, Disable generator
+ 	{0x0065, 0x05, 0, 0}, {0x0064, 0xb1, 0, 0}, // PG select own timing, Sequence pattern, enable generator
  	{0x0064, 0xb0, 0, 0}, {0x0064, 0xb1, 0, 0}, // White/Black Turn generator on and then	
 	{0x0064, 0x14, 0, 0}						// Turn generator off
 };
@@ -244,6 +244,29 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 		}
 		retval = ub9xx_write_reg(UB940_ADDR, RegAddr, Val);
 
+		
+		
+		retval = ub9xx_write_reg(UB947_ADDR, 0x0066, 04);
+		retval = ub9xx_write_reg(UB947_ADDR, 0x0067, 00);		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		if (retval < 0)
 			goto err;
 
@@ -266,6 +289,9 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	pr_err (">>>> ov5640_init_mode: build date = %s %s\n", __DATE__, __TIME__);
 	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
+	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     		// soft reset
+	retval = ub9xx_write_reg(UB947_ADDR, 0x01, 0x02);     		// soft reset
+	
     pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // 
     retval = ov5640_download_firmware(pModeSetting, ArySize);   // 

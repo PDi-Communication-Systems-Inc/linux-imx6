@@ -628,8 +628,8 @@ static int csi_enc_enable_csi(void *private)
 	no_of_frame = 0;
 	measure_in_ms = 1;
 	
-//	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-//	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
  	
 
 	return ipu_enable_csi(cam->ipu, cam->csi);
