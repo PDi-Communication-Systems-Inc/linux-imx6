@@ -262,10 +262,12 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	int retval  = 0;
 	void *mipi_csi2_info;
 	u32 mipi_reg, msec_wait4stable = 0;
+	unsigned int i;
 
 	pr_err (">>>> ov5640_init_mode: build date = %s %s\n", __DATE__, __TIME__);
 	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
+	retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0xff);     		// TI errata-set CSI Indirect Address Reg to 0xFF
 	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     		// soft reset
 
     pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
@@ -323,7 +325,6 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	msleep(msec_wait4stable);
 
 	if (mipi_csi2_info) {
-		unsigned int i;
 		i = 0;
 		/* wait for mipi sensor ready */
 		mipi_reg = mipi_csi2_dphy_status(mipi_csi2_info);

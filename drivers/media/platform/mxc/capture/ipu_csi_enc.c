@@ -27,7 +27,7 @@
 #include "mxc_v4l2_capture.h"
 #include "ipu_prp_sw.h"
 
-
+#include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kprobes.h>
@@ -613,16 +613,8 @@ static int csi_enc_enable_csi(void *private)
 {
 	u8 RegVal= 0;
 	int retval = 0;											//JAD
+	unsigned int i;
 	
-	/* Show PCLK status in 947 part*/
-//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-	
-
-	ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, ind address
-	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
-	pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
-
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
@@ -631,11 +623,8 @@ static int csi_enc_enable_csi(void *private)
 /*
   This sequence of writes is for the TI errata fix
 */
-	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0003, 0xfa);		
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0003, 0xda);
-	retval = ub9xx_write_reg(UB947_ADDR, 0x004a, 0x01);		
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x01);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
@@ -645,13 +634,35 @@ static int csi_enc_enable_csi(void *private)
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x04);		
 	
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
- 
+/* Show PCLK status in 947 part*/
+	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+	
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);		
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);		
 
+//	ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
+//	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+//	pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+ 	
+	i = 0;
+	retval = 0;
+	while ((retval != 0x03) && (i < 10) ) {	
+		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
+		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+		msleep(10);
+	}
+
+	
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
