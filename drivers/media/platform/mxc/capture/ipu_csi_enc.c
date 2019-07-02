@@ -627,10 +627,30 @@ static int csi_enc_enable_csi(void *private)
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
+
+/*
+  This sequence of writes is for the TI errata fix
+*/
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0003, 0xfa);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0003, 0xda);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004a, 0x01);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x01);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x04);		
 	
 	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
 	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
- 	
+ 
 
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }

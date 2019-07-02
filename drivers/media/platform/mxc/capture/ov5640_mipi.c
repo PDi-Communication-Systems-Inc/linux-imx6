@@ -243,29 +243,6 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 			Val    |= RegVal;
 		}
 		retval = ub9xx_write_reg(UB940_ADDR, RegAddr, Val);
-
-		
-		
-		retval = ub9xx_write_reg(UB947_ADDR, 0x0066, 04);
-		retval = ub9xx_write_reg(UB947_ADDR, 0x0067, 00);		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 		
 		if (retval < 0)
 			goto err;
@@ -290,12 +267,12 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
 	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     		// soft reset
-	retval = ub9xx_write_reg(UB947_ADDR, 0x01, 0x02);     		// soft reset
-	
+
     pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
     ArySize = ARRAY_SIZE(ub940_init_setting);                   // 
     retval = ov5640_download_firmware(pModeSetting, ArySize);   // 
 
+	retval = ub9xx_write_reg(UB947_ADDR, 0x01, 0x02);     		// soft reset
 	mipi_csi2_info = mipi_csi2_get_info();
 
 	/* initial mipi dphy */
