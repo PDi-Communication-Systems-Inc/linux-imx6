@@ -31,6 +31,8 @@
 #include "ipu_prv.h"
 #include "ipu_regs.h"
 
+#define DEBUG
+
 /*!
  * _ipu_csi_mclk_set
  *
@@ -810,7 +812,7 @@ void _ipu_csi_wait4eof(struct ipu_soc *ipu, ipu_channel_t channel)
 		dev_err(ipu->dev, "CSI irq %d in use\n", irq);
 		return;
 	}
-	ret = wait_for_completion_timeout(&ipu->csi_comp, msecs_to_jiffies(500));
+	ret = wait_for_completion_timeout(&ipu->csi_comp, msecs_to_jiffies(900));  //JAD was 500
 	ipu_free_irq(ipu, irq, ipu);
 	dev_dbg(ipu->dev, "CSI stop timeout - %d * 10ms\n", 5 - ret);
 }

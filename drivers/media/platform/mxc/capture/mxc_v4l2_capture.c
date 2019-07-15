@@ -1621,6 +1621,7 @@ static int mxc_v4l_open(struct file *file)
 
 	pr_debug("\nIn MVC: mxc_v4l_open\n");
 	pr_debug("   device name is %s\n", dev->name);
+pr_err("%s: JAD mxc_v4l_open inside  !\n", __func__);
 
 	if (!cam) {
 		pr_err("ERROR: v4l2 capture: Internal error, "
@@ -1649,9 +1650,11 @@ static int mxc_v4l_open(struct file *file)
 		wait_event_interruptible(cam->power_queue,
 					 cam->low_power == false);
 
+pr_err("%s: JAD current_input = %s!\n", __func__, mxc_capture_inputs[cam->current_input].name);
 		if (strcmp(mxc_capture_inputs[cam->current_input].name,
 			   "CSI MEM") == 0) {
 #if defined(CONFIG_MXC_IPU_CSI_ENC) || defined(CONFIG_MXC_IPU_CSI_ENC_MODULE)
+pr_err("%s: JAD csi_enc_select(cam) calling  !\n", __func__);
 			err = csi_enc_select(cam);
 #endif
 		} else if (strcmp(mxc_capture_inputs[cam->current_input].name,
@@ -1751,6 +1754,7 @@ static int mxc_v4l_open(struct file *file)
 	file->private_data = dev;
 
 oops:
+	pr_err("%s: JAD oops - current_input = %s!\n", __func__, mxc_capture_inputs[cam->current_input].name);
 	up(&cam->busy_lock);
 	return err;
 }
@@ -2376,6 +2380,7 @@ static long mxc_v4l_do_ioctl(struct file *file,
 
 		if (strcmp(mxc_capture_inputs[*index].name, "CSI MEM") == 0) {
 #if defined(CONFIG_MXC_IPU_CSI_ENC) || defined(CONFIG_MXC_IPU_CSI_ENC_MODULE)
+pr_err("%s: JAD - calling \n", __func__);
 			retval = csi_enc_select(cam);
 			if (retval)
 				break;

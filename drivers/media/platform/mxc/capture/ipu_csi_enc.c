@@ -27,7 +27,7 @@
 #include "mxc_v4l2_capture.h"
 #include "ipu_prp_sw.h"
 
-
+#include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kprobes.h>
@@ -38,6 +38,9 @@
 
 #include <linux/mxcfb.h>
 #include <linux/console.h>
+#include <linux/stacktrace.h>
+#define CONFIG_STACKTRACE
+
 static ktime_t start, last;
 static s64 total_time;
 static unsigned int no_of_frame;
@@ -46,7 +49,7 @@ static int irq_start;
 static int measure_in_ms;
 
 #ifdef CAMERA_DBG
-	#define CAMERA_TRACE(x) (printk)x
+	#define CAMERA_TRACE(x) printk(x)
 #else
 	#define CAMERA_TRACE(x)
 #endif
@@ -88,7 +91,10 @@ static void dbg_measure_in_fps()
 {
 	s64 actual_time;
 	ktime_t end;
+	struct stack_trace trace;
+	unsigned long entries[8];
 
+//	pr_err( "inside dbg_measure_in_fps \n");
 	no_of_frame++;
 	if (!irq_start) {
 		last = start = ktime_get();
@@ -114,7 +120,13 @@ static void dbg_measure_in_fps()
 		pr_err("++++ F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
 	}
-	last = end;
+//	#ifdef CONFIG_STACKTRACE
+//		pr_err("inside CONFIG_STACKTRACE ");
+//
+//
+//	#endif
+		last = end;
+
 }
 
 static void directly_display(cam_data *cam)
@@ -141,8 +153,9 @@ static void directly_display(cam_data *cam)
 static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
 	cam_data *cam = (cam_data *) dev_id;
-	dbg_measure_in_fps();
+//	pr_err("csi_enc_callback: csi_enc_callback inside.\n");
 
+	dbg_measure_in_fps();
 	if (cam->enc_callback == NULL){
 		pr_err("++++ %s callback=null \n", __func__);	//JAD
 		return IRQ_HANDLED;
@@ -295,6 +308,11 @@ static int csi_enc_setup(cam_data *cam)
 	return err;
 }
 
+void ipu_getstatus(struct ipu_soc *ipu, uint32_t irq) {
+	bool value;
+	value = ipu_get_irq_status(ipu, irq);
+	pr_err("IPU_IRQ_CSI0_OUT_EOF value = %d\n",value);
+}
 /*!
  * function to update physical buffer address for encorder IDMA channel
  *
@@ -535,6 +553,8 @@ static int csi_enc_enabling_tasks(void *private)
 	    PAGE_ALIGN(cam->v2f.fmt.pix.sizeimage);
 	cam->dummy_frame.buffer.m.offset = cam->dummy_frame.paddress;
 
+	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+pr_err("before ipu clear() \n");
 	ipu_clear_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
 	err = ipu_request_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF,
 			      csi_enc_callback, 0, "Mxc Camera", cam);
@@ -551,9 +571,11 @@ static int csi_enc_enabling_tasks(void *private)
 		printk(KERN_ERR "csi_enc_setup %d\n", err);
 		return err;
 	}
-
+	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+    
 	return err;
 }
+
 
 /*!
  * Disable encoder task
@@ -611,27 +633,11 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
-	u8 RegVal= 0;
-	int retval = 0;											//JAD
-	
-	/* Show PCLK status in 947 part*/
-//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-	
-
-	ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, ind address
-	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
-	pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
-
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
-	
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-	ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
- 	
-
+	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);			//JAD Movedhere
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
@@ -648,6 +654,9 @@ static int csi_enc_disable_csi(void *private)
 	/* free csi eof irq firstly.
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
+	 pr_err("before the ipu_free_irq \n");
+	 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+
     ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
 	pr_err("++++ %s\n", __func__);
 	dbg_show_in_fps();

@@ -28,7 +28,7 @@
 #include "ipu_prp_sw.h"
 
 #ifdef CAMERA_DBG
-	#define CAMERA_TRACE(x) (printk)x
+	#define CAMERA_TRACE(x) printk(x)
 #else
 	#define CAMERA_TRACE(x)
 #endif
@@ -145,7 +145,7 @@ static int csi_enc_setup(cam_data *cam)
 	int csi_id;
 #endif
 
-	CAMERA_TRACE("In csi_enc_setup\n");
+//	CAMERA_TRACE("In ipu_fg_overlay_sdc.c csi_enc_setup\n");
 	if (!cam) {
 		printk(KERN_ERR "cam private is NULL\n");
 		return -ENXIO;
@@ -313,8 +313,8 @@ static int csi_enc_enabling_tasks(void *private)
 {
 	cam_data *cam = (cam_data *) private;
 	int err = 0;
-	CAMERA_TRACE("IPU:In csi_enc_enabling_tasks\n");
-
+//	CAMERA_TRACE("IPU:In foreground csi_enc_enabling_tasks\n");
+	pr_debug (">>>> IPU:In foreground csi_enc_enabling_tasks - Line: %i\n", __LINE__);
 	ipu_clear_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF + cam->csi);
 	err = ipu_request_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF + cam->csi,
 			      csi_enc_callback, 0, "Mxc Camera", cam);

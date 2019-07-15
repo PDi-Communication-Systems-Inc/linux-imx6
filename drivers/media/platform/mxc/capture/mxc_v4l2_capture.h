@@ -39,7 +39,7 @@
 #include <media/v4l2-dev.h>
 #include <media/v4l2-int-device.h>
 
-
+#define CAMERA_DBG      	//JAD
 #define UB940_WIDTH	1366
 #define FOR_ANDROID_WIDTH	1376
 
