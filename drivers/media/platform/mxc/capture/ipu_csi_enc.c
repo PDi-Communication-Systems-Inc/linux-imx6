@@ -633,11 +633,57 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
+
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);			//JAD Movedhere
+
+/*
+  This sequence of writes is for the TI errata fix
+*/
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	
+/* Show PCLK status in 947 part*/
+	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
+	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+	
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);		
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);		
+
+//	ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
+//	retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+//	pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+ 	
+	i = 0;
+	retval = 0;
+	while ((retval != 0x03) && (i < 10) ) {	
+		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
+		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+		msleep(10);
+	}
+
+	
+>>>>>>> c34f86e2c8ce34d5d7fda7f567e609b064705f4c
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
 
