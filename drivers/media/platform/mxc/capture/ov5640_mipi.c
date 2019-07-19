@@ -74,26 +74,26 @@ static struct sensor_data ov5640_data;
 // reads and writes.  CSI indirect address = 0x6c, data=0x6d, 
 // For RGB888 instead of YUV422, change 0x006b from 0x50 to 0x00
 // For Stripe bars instead of sequence, 0x0064, bit 2=1 (11->15)
-static struct reg_value ub940_init_setting[] = {
-    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
-	{0x006d, 0x00, 0, 0},						
-												// Set Pattern Generator (indirect Registers)  
-	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
-	{0x0066, 0x04, 0, 0}, {0x0067, 0x00, 0, 0}, // Total  Frame Size 1                     
-	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0}, // Total  Frame Size 2                        
- 	{0x0066, 0x06, 0, 0}, {0x0067, 0x31, 0, 0}, // Total  Frame Size 3
- 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
-	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
- 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
-	{0x0066, 0x0a, 0, 0}, {0x0067, 0x07, 0, 0},	// Horiz  Sync Width                       
- 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
-	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
- 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
-	{0x0066, 0x0e, 0, 0}, {0x0067, 0x00, 0, 0}, // Sync Configuration                       
- 	{0x0065, 0x05, 0, 0}, {0x0064, 0xb1, 0, 0}, // PG select own timing, Sequence pattern, enable generator
- 	{0x0064, 0xb0, 0, 0}, {0x0064, 0xb1, 0, 0}, // White/Black Turn generator on and then	
-	{0x0064, 0x14, 0, 0}						// Turn generator off
-};
+//static struct reg_value ub940_init_setting[] = {
+//    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
+//	{0x006d, 0x00, 0, 0},						
+//												// Set Pattern Generator (indirect Registers)  
+//	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
+//	{0x0066, 0x04, 0, 0}, {0x0067, 0x00, 0, 0}, // Total  Frame Size 1                     
+//	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0}, // Total  Frame Size 2                        
+// 	{0x0066, 0x06, 0, 0}, {0x0067, 0x31, 0, 0}, // Total  Frame Size 3
+// 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
+//	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
+// 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
+//	{0x0066, 0x0a, 0, 0}, {0x0067, 0x07, 0, 0},	// Horiz  Sync Width                       
+// 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
+//	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
+// 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
+//	{0x0066, 0x0e, 0, 0}, {0x0067, 0x00, 0, 0}, // Sync Configuration                       
+// 	{0x0065, 0x05, 0, 0}, {0x0064, 0xb1, 0, 0}, // PG select own timing, Sequence pattern, enable generator
+// 	{0x0064, 0xb0, 0, 0}, {0x0064, 0xb1, 0, 0}, // White/Black Turn generator on and then	
+//	{0x0064, 0x14, 0, 0}						// Turn generator off
+//};
 
 static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
@@ -120,21 +120,21 @@ static struct i2c_driver ov5640_i2c_driver = {
 s32 ub9xx_write_reg(u8 client, u16 reg, u8 val)
 {
 	u8 addr1 = 0;
-	u8 au8Buf[3] = {0};         				// 2 address and 1 data value    
-	au8Buf   [0] = reg & 0xff;  				// JAD was - reg >> 8
-	au8Buf   [1] = val;         				// JAD was - reg & 0xff
-	au8Buf   [2] = val;         				// may be able to get rid of this
+	u8 au8Buf[3] = {0};         // 2 address and 1 data value    
+	au8Buf   [0] = reg & 0xff;  // JAD was - reg >> 8
+	au8Buf   [1] = val;         // JAD was - reg & 0xff
+	au8Buf   [2] = val;         // may be able to get rid of this
 
-	addr1 = ov5640_data.i2c_client->addr;		//Save original address
-    ov5640_data.i2c_client->addr = client;		// set the client for the second device
+	addr1 = ov5640_data.i2c_client->addr;			//Save original address
+    ov5640_data.i2c_client->addr = client;			// set the client for the second device
 
 	if (i2c_master_send(ov5640_data.i2c_client, au8Buf, 2) < 0) {		// JAD was 3
 		pr_err(">>>> %s: error:reg=%x,val=%x\n",__func__, reg, val);    // JAD
 		return -1;
 	}
 
-	ov5640_data.i2c_client->addr = addr1;   	//JAD restore original address
-//	msleep(10);
+	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
+	msleep(1);
 	return 0;
 }
 
@@ -165,6 +165,7 @@ s32 ub9xx_read_reg(u8 client, u16 reg, u8 *val)
 	}
 	*val = u8RdVal;
 	ov5640_data.i2c_client->addr = addr1;   		//JAD restore original address
+	msleep(1);
 
 	return u8RdVal;
 }
@@ -194,7 +195,7 @@ int OV5640_get_sysclk(void)
   structures available for each mode, for example:
   reg_value ov5640_setting_30fps_VGA_640_480[]
 */
-static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
+/*static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 {
 	register u32 Delay_ms = 0;
 	register u16 RegAddr  = 0;
@@ -230,6 +231,7 @@ static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
 err:
 	return retval;
 }
+*/
 
 static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			    enum ov5640_mode mode, enum ov5640_mode orig_mode)
@@ -240,20 +242,91 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	void *mipi_csi2_info;
 	u32 mipi_reg, msec_wait4stable = 0;
 	unsigned int i;
+	u8 RegVal= 0;
 
 	pr_err (">>>> ov5640_init_mode: build date = %s %s\n", __DATE__, __TIME__);
 	pr_err (">>>> ov5640_init_mode: frame rate=%i, mode=%i, orig_mode=%i \n", frame_rate, mode, orig_mode);
 
-	retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0xff);     		// TI errata-set CSI Indirect Address Reg to 0xFF
-	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     		// soft reset
+	
+/*  TI errata:
+	– Step A: Before issuing a DIGITAL RESET1 (0x01[0]=1) or DIGITAL RESET0 (0x01[1] = 1), set the CSI Indirect Address
+	  (CSIIA) register (address 0x6C) to point to an unused register location ( by setting CSIIA register 0x6C=0xFF)
+	– Step B: After issuing a DIGITAL RESET1 (0x01[0]=1) or DIGITAL RESET0 (0x01[1] = 1), wait ≥500us before accessing any
+	  DS90UH940 registers via I2C
+*/
+	retval = ub9xx_write_reg(UB947_ADDR, 0x01, 0x02);     			// soft reset
+	msleep(1);														// 1mS delay - TI delay > 500uS.
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0xff);     			// TI errata-set CSI Indirect Address Reg to 0xFF
+	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     			// soft reset
+	msleep(1);														// 1mS delay - TI delay > 500uS.
+		
+//    pModeSetting = ub940_init_setting;         			      	// New for LVDS-CSI2
+//    ArySize = ARRAY_SIZE(ub940_init_setting);                   	// 
+//    retval = ov5640_download_firmware(pModeSetting, ArySize);   	// 
 
-    pModeSetting = ub940_init_setting;         			        // New for LVDS-CSI2
-    ArySize = ARRAY_SIZE(ub940_init_setting);                   // 
-    retval = ov5640_download_firmware(pModeSetting, ArySize);   // 
+	msleep(1);	
+/*
+  This sequence of writes is for the TI errata fix
+*/
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);
 
-	retval = ub9xx_write_reg(UB947_ADDR, 0x01, 0x02);     		// soft reset
-	mipi_csi2_info = mipi_csi2_get_info();
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);				//Set OLDI	
+	
+/* Show PCLK status in 947 part*/
+//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);			//JAD
+//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+	
 
+/*  TI Work around
+	– Step A: To reduce likelihood of SOT/data errors, implement the following software workaround once the CSI Pass condition
+	  from the DS90Ux940 is detected at startup
+		• Force Lock Indication Low by setting register 0x40 = 0x4B
+		• Release the forced Lock status by setting register 0x40 = 0x43
+	– Above steps results in restart of CSI PLL logic
+		• Wait for re-assertion of the CSI Pass indication
+	– Step B: To recover from SOT/data errors after initialization, the system should monitor the CSI interface for SOT/data errors
+			  prior to capturing/displaying video data. If SOT/data errors exist, repeat the workaround mentioned in Step A until proper CSI
+			  SOT is detected.
+*/
+
+	i = 0;
+	retval = ub9xx_write_reg(UB940_ADDR, 0x6b, 0x50);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0x2e);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x6d, 0x00);
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      			// Force Lock Indication Low 
+	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      			// Release the forced Lock status 
+
+	while ((retval != 0x03) && (i < 10) ) {	
+		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      				// Read CSI Pass, indirect address
+		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);		// indirect data
+		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+		i+=1;
+		msleep(20);
+	}
+	msleep(100);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);				// Enable PATGEN with color bars and external timing on 947
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);				// Set PATGEN on 940 to color bars
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);				// Enable PATGEN BIST
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);				// Disable PATGEN BIST
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);				// Disable PATGEN on 947
+		
+	
+	
+	
+	mipi_csi2_info = mipi_csi2_get_info();	
+	
 	/* initial mipi dphy */
 	if (mipi_csi2_info) {
 
@@ -347,7 +420,7 @@ static int ioctl_g_ifparm(struct v4l2_int_device *s, struct v4l2_ifparm *p)
 
 	memset(p, 0, sizeof(*p));
 	p->u.bt656.clock_curr = ov5640_data.mclk;
-	p->if_type = V4L2_IF_TYPE_BT656;	                    
+	p->if_type = V4L2_IF_TYPE_BT656;	                    // Change this?  was V4L2_IF_TYPE_BT656
 	p->u.bt656.mode = V4L2_IF_TYPE_BT656_MODE_BT_8BIT;      // Was V4L2_IF_TYPE_BT656_MODE_BT_8BIT
 	p->u.bt656.clock_min = OV5640_XCLK_MIN;
 	p->u.bt656.clock_max = OV5640_XCLK_MAX;
@@ -616,7 +689,17 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
         return ret;
     }
 
+	/* Show PCLK status in 947 part*/
+//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);
+//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+
 	ov5640_data.on = true;
+	
+//	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
+//	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
+//	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+//	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+	
 	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 
     if(ret)
@@ -817,7 +900,8 @@ static int ov5640_remove(struct i2c_client *client)
 static __init int ov5640_init(void)
 {
 	u8 err;
-
+	
+	printk(KERN_ERR "TI Camera Driver V1.0\n");
 	err = i2c_add_driver(&ov5640_i2c_driver);
 	if (err != 0)
 		pr_err("%s:driver registration failed, error=%d\n",

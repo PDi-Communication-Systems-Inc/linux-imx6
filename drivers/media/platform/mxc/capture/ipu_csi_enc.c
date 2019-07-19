@@ -633,10 +633,78 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
+	u8 RegVal= 0;
+	int retval = 0;											//JAD
+//	unsigned int i;
+	
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
+
+/*	Read expected timing values
+	*/
+
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor	
+	msleep(1);	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor	- must write again
+	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	pr_err(">>>> %s: H High = %x \n",__func__,retval);
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x09);		//H active Low Monitor	
+	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	pr_err(">>>> %s: H Low = %x \n",__func__,retval);		//
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x39);		//L active High Monitor	
+	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	pr_err(">>>> %s: L High = %x \n",__func__,retval);
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x29);		//L active Low Monitor	
+	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	pr_err(">>>> %s: L Low = %x \n",__func__,retval);		//
+
+	
+/*
+  This sequence of writes is for the TI errata fix
+*/
+//	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	
+/* Show PCLK status in 947 part*/
+//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
+//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
+	
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
+ 	
+//	i = 0;
+//	retval = 0;
+//	while ((retval != 0x03) && (i < 10) ) {	
+//		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
+//		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
+//		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+//		msleep(20);
+//	}
+//	msleep(100);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);		
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);
+//	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);		//was 0x00
+	
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0065, 0x05);		//JAD extra, PG select own timing, Sequence pattern	
+//	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0xB1);		//JAD extra, enable generator
 
 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);			//JAD Movedhere
 	return ipu_enable_csi(cam->ipu, cam->csi);
