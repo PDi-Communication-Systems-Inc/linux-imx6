@@ -68,33 +68,6 @@ static int rst_gpio;
 //
 static struct sensor_data ov5640_data;
 
-//
-// DS90ub940 Init Settings - feed through
-// 0x0018 is a general puropse mailbox location for testing 
-// reads and writes.  CSI indirect address = 0x6c, data=0x6d, 
-// For RGB888 instead of YUV422, change 0x006b from 0x50 to 0x00
-// For Stripe bars instead of sequence, 0x0064, bit 2=1 (11->15)
-//static struct reg_value ub940_init_setting[] = {
-//    {0x006b, 0x50, 0, 0},{0x006c, 0x2e, 0, 0},  // YUV422_8, Virtual Channel ID=0
-//	{0x006d, 0x00, 0, 0},						
-//												// Set Pattern Generator (indirect Registers)  
-//	{0x0066, 0x02, 0, 0}, {0x0067, 0x7f, 0, 0}, // Blue Sub-Pixel
-//	{0x0066, 0x04, 0, 0}, {0x0067, 0x00, 0, 0}, // Total  Frame Size 1                     
-//	{0x0066, 0x05, 0, 0}, {0x0067, 0xb7, 0, 0}, // Total  Frame Size 2                        
-// 	{0x0066, 0x06, 0, 0}, {0x0067, 0x31, 0, 0}, // Total  Frame Size 3
-// 	{0x0066, 0x07, 0, 0}, {0x0067, 0x56, 0, 0},	// Active Frame Size 1
-//	{0x0066, 0x08, 0, 0}, {0x0067, 0x05, 0, 0},	// Active Frame Size 2                       
-// 	{0x0066, 0x09, 0, 0}, {0x0067, 0x30, 0, 0}, // Active Frame Size 3
-//	{0x0066, 0x0a, 0, 0}, {0x0067, 0x07, 0, 0},	// Horiz  Sync Width                       
-// 	{0x0066, 0x0b, 0, 0}, {0x0067, 0x06, 0, 0},	// Vert   Sync Width 
-//	{0x0066, 0x0c, 0, 0}, {0x0067, 0xff, 0, 0},	// Horiz  Back Porch Width                        
-// 	{0x0066, 0x0d, 0, 0}, {0x0067, 0x12, 0, 0},	// Vertic Back Porch Width 
-//	{0x0066, 0x0e, 0, 0}, {0x0067, 0x00, 0, 0}, // Sync Configuration                       
-// 	{0x0065, 0x05, 0, 0}, {0x0064, 0xb1, 0, 0}, // PG select own timing, Sequence pattern, enable generator
-// 	{0x0064, 0xb0, 0, 0}, {0x0064, 0xb1, 0, 0}, // White/Black Turn generator on and then	
-//	{0x0064, 0x14, 0, 0}						// Turn generator off
-//};
-
 static int ov5640_probe(struct i2c_client *adapter,
 				const struct i2c_device_id *device_id);
 static int ov5640_remove(struct i2c_client *client);
@@ -190,48 +163,6 @@ int OV5640_get_sysclk(void)
 	return sysclk;
 }
 
-/*
-  This functions sets registers on the OV5640 by passing the 
-  structures available for each mode, for example:
-  reg_value ov5640_setting_30fps_VGA_640_480[]
-*/
-/*static int ov5640_download_firmware(struct reg_value *pModeSetting, s32 ArySize)
-{
-	register u32 Delay_ms = 0;
-	register u16 RegAddr  = 0;
-	register u8 Mask      = 0;
-	register u8 Val       = 0;
-	u8 RegVal             = 0;
-	int i, retval         = 0;
-
-	for (i = 0; i < ArySize; ++i, ++pModeSetting) {
-		Delay_ms = pModeSetting->u32Delay_ms;
-		RegAddr  = pModeSetting->u16RegAddr;
-		Val      = pModeSetting->u8Val;
-		Mask     = pModeSetting->u8Mask;
-
-		if (Mask) {
-			retval = ub9xx_read_reg(UB940_ADDR, RegAddr, &RegVal);
-
-			if (retval < 0)
-				goto err;
-
-			RegVal &= ~(u8)Mask;
-			Val    &= Mask;
-			Val    |= RegVal;
-		}
-		retval = ub9xx_write_reg(UB940_ADDR, RegAddr, Val);
-		
-		if (retval < 0)
-			goto err;
-
-		if (Delay_ms)
-			msleep(Delay_ms);
-	}
-err:
-	return retval;
-}
-*/
 
 static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			    enum ov5640_mode mode, enum ov5640_mode orig_mode)
@@ -261,14 +192,7 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	retval = ub9xx_write_reg(UB940_ADDR, 0x01, 0x02);     			// soft reset
 	msleep(1);														// 1mS delay - TI delay > 500uS.
 		
-//    pModeSetting = ub940_init_setting;         			      	// New for LVDS-CSI2
-//    ArySize = ARRAY_SIZE(ub940_init_setting);                   	// 
-//    retval = ov5640_download_firmware(pModeSetting, ArySize);   	// 
-
-	msleep(1);	
-/*
-  This sequence of writes is for the TI errata fix
-*/
+//  This sequence of writes is for the TI errata fix
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
@@ -279,15 +203,9 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);
-
 	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);				//Set OLDI	
 	
-/* Show PCLK status in 947 part*/
-//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);			//JAD
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-	
-
-/*  TI Work around
+/*  TI Work around - see below
 	– Step A: To reduce likelihood of SOT/data errors, implement the following software workaround once the CSI Pass condition
 	  from the DS90Ux940 is detected at startup
 		• Force Lock Indication Low by setting register 0x40 = 0x4B
@@ -300,31 +218,6 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 */
 
 	i = 0;
-	retval = ub9xx_write_reg(UB940_ADDR, 0x6b, 0x50);
-	retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0x2e);
-	retval = ub9xx_write_reg(UB940_ADDR, 0x6d, 0x00);
-	
-	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      			// Force Lock Indication Low 
-	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      			// Release the forced Lock status 
-
-	while ((retval != 0x03) && (i < 10) ) {	
-		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      				// Read CSI Pass, indirect address
-		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);		// indirect data
-		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
-		i+=1;
-		msleep(20);
-	}
-	msleep(100);
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);				// Enable PATGEN with color bars and external timing on 947
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);				// Set PATGEN on 940 to color bars
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);				// Enable PATGEN BIST
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);				// Disable PATGEN BIST
-	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);				// Disable PATGEN on 947
-		
-	
-	
-	
 	mipi_csi2_info = mipi_csi2_get_info();	
 	
 	/* initial mipi dphy */
@@ -344,8 +237,29 @@ static int ov5640_init_mode(enum ov5640_frame_rate frame_rate,
 			{
 				pr_err (">>>> Debug ov5640 init mode: Line: %i\n", __LINE__);				
 				mipi_csi2_reset(mipi_csi2_info);
-			}
+				
+				retval = ub9xx_write_reg(UB940_ADDR, 0x6b, 0x50);	// TI work around described above
+				retval = ub9xx_write_reg(UB940_ADDR, 0x6c, 0x2e);
+				retval = ub9xx_write_reg(UB940_ADDR, 0x6d, 0x00);
+				retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);	// Force Lock Indication Low 
+				retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);	// Release the forced Lock status 
 
+				while ((retval != 0x03) && (i < 10) ) {	
+					ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      				// Read CSI Pass, indirect address
+					retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);		// indirect data
+					pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
+					i+=1;
+					msleep(10);
+					}
+
+				retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);		// Enable PATGEN with color bars and external timing on 947
+				retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);		// Set PATGEN on 940 to color bars
+				retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);		// Enable PATGEN BIST
+				retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
+				retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);		// Disable PATGEN BIST
+				retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);		// Disable PATGEN on 947
+				
+			}
 			mipi_csi2_set_datatype(mipi_csi2_info, MIPI_DT_YUV422);  // force type MIPI_DT_YUV422
 			
 		} else {
@@ -689,16 +603,7 @@ static int ioctl_dev_init(struct v4l2_int_device *s)
         return ret;
     }
 
-	/* Show PCLK status in 947 part*/
-//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-
 	ov5640_data.on = true;
-	
-//	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x15);      // turn 940 PG on
-//	ret = ub9xx_write_reg(UB940_ADDR, 0x64, 0x14);      // turn 940 PG off
-//	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-//	ret = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
 	
 	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
 

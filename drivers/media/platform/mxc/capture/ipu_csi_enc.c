@@ -120,11 +120,7 @@ static void dbg_measure_in_fps()
 		pr_err("++++ F:%d, IRQ:@ %u ms\n",
 				no_of_frame, (unsigned int)actual_time);
 	}
-//	#ifdef CONFIG_STACKTRACE
-//		pr_err("inside CONFIG_STACKTRACE ");
-//
-//
-//	#endif
+
 		last = end;
 
 }
@@ -313,6 +309,7 @@ void ipu_getstatus(struct ipu_soc *ipu, uint32_t irq) {
 	value = ipu_get_irq_status(ipu, irq);
 	pr_err("IPU_IRQ_CSI0_OUT_EOF value = %d\n",value);
 }
+
 /*!
  * function to update physical buffer address for encorder IDMA channel
  *
@@ -353,6 +350,80 @@ static void get_disp_ipu(cam_data *cam)
 {
 		disp_ipu = ipu_get_soc(1); /* using DISP4 */
 }
+
+
+/*!
+ * oldi_reset - check video resolution
+ *
+ */
+static int oldi_reset(void)
+{
+	int retval = 0;											//JAD
+	
+    pr_err(">>>> Inside %s: \n",__func__);
+
+/*  This sequence of writes is for the TI errata fix */
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);
+	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI	
+	return;
+}
+
+/*!
+ * check_res - check video resolution
+ *
+ */
+static int check_res(void)
+{
+	u8 RegVal= 0;
+	int retval = 0;					//JAD
+	int err = 0;
+	int hhigh = 0;					//JAD
+	int hlow  = 0;					//JAD
+	int vhigh = 0;					//JAD
+	int vlow  = 0;					//JAD
+	int hres  = 0;					//JAD	
+	int vres  = 0;					//JAD	
+	int mask  = 63;					//JAD
+
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor
+	msleep(1);
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor	- must write again
+	hhigh = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x09);		//H active Low Monitor
+	hlow = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);		//
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x39);		//L active High Monitor
+	vhigh = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
+	
+	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x29);		//L active Low Monitor	
+	vlow = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);		//
+
+	hres=((hhigh&mask)<<6)|(hlow&mask);
+    vres=((vhigh&mask)<<6)|(vlow&mask);
+
+	if((hres == 1366) && (vres == 768)){
+	    pr_err(">>>> %s: RESOLUTION1= %i x %i \n",__func__,hres,vres);	
+	}
+	
+	else{
+		pr_err(">>>> %s: RESOLUTION2 = %i x %i \n",__func__,hres,vres);
+		err = 1;
+		}
+	
+return err;	
+}
+
 
 /*!
  * foreground_start - start the vf task
@@ -635,80 +706,24 @@ static int csi_enc_enable_csi(void *private)
 {
 	u8 RegVal= 0;
 	int retval = 0;											//JAD
-//	unsigned int i;
+	int i = 0;
 	
 	cam_data *cam = (cam_data *) private;
 	irq_start = 1;
 	no_of_frame = 0;
 	measure_in_ms = 1;
 
-/*	Read expected timing values
-	*/
-
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor	
-	msleep(1);	
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x19);		//H active High Monitor	- must write again
-	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
-	pr_err(">>>> %s: H High = %x \n",__func__,retval);
-	
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x09);		//H active Low Monitor	
-	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
-	pr_err(">>>> %s: H Low = %x \n",__func__,retval);		//
-	
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x39);		//L active High Monitor	
-	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
-	pr_err(">>>> %s: L High = %x \n",__func__,retval);
-	
-	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x29);		//L active Low Monitor	
-	retval = ub9xx_read_reg(UB940_ADDR, 0x0069, &RegVal);	//
-	pr_err(">>>> %s: L Low = %x \n",__func__,retval);		//
-
-	
-/*
-  This sequence of writes is for the TI errata fix
-*/
-//	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0040, 0x10);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);		
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x16);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x47);		
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x0a);		
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x20);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);		
-	
-/* Show PCLK status in 947 part*/
-//	retval = ub9xx_read_reg(UB947_ADDR, 0x000c, &RegVal);	//JAD
-//	pr_err(">>>> %s: UB947 General Status = %x \n",__func__,retval);
-	
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x4b);      // Force Lock Indication Low 
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x40, 0x43);      // Release the forced Lock status 
- 	
-//	i = 0;
-//	retval = 0;
-//	while ((retval != 0x03) && (i < 10) ) {	
-//		ub9xx_write_reg(UB940_ADDR, 0x6c, 0x16);      			// Read CSI Pass, indirect address
-//		retval = ub9xx_read_reg(UB940_ADDR, 0x006d, &RegVal);	// indirect data
-//		pr_err(">>>> %s: UB940 CSI Pass = %x \n",__func__,retval);
-//		msleep(20);
-//	}
-//	msleep(100);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x05);
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0x04);		
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x08);
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0066, 0x19);		
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0068, 0x00);
-//	retval = ub9xx_write_reg(UB947_ADDR, 0x0064, 0x00);		//was 0x00
-	
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0065, 0x05);		//JAD extra, PG select own timing, Sequence pattern	
-//	retval = ub9xx_write_reg(UB940_ADDR, 0x0064, 0xB1);		//JAD extra, enable generator
+	while ((check_res()) && (i < 5)) {						// Read expected display timing values
+		oldi_reset();										// Reset OLDI block
+		pr_err(">>>> %s: In check_res - I = %i \n",__func__,i);
+		msleep(1);
+		i += 1;
+	}
 
 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);			//JAD Movedhere
 	return ipu_enable_csi(cam->ipu, cam->csi);
 }
+
 
 /*!
  * Disable csi
