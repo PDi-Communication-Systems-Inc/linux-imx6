@@ -39,6 +39,7 @@
 #include <linux/mxcfb.h>
 #include <linux/console.h>
 #include <linux/stacktrace.h>
+#include <linux/proc_fs.h>
 #define CONFIG_STACKTRACE
 
 static ktime_t start, last;
@@ -125,6 +126,76 @@ static void dbg_measure_in_fps()
 
 }
 
+/*************************************************
+* JTS 7/25/2019 
+* CSI encoder callback status added to the proc file system 
+* so it can be read in user space. 
+*  
+* Reading proc/csi-irq gives 0 default, 1 if IRQ has been handled.
+*  
+* Writing to proc/csi-irq will clear the value if 0 is written. 
+* All other writes will fail. 
+*  
+* There is an entry in the csi_enc_init() and 
+* csi_enc_exit() functions to support this. 
+*  
+* Example of how to do this: 
+* https://devarea.com/linux-kernel-development-creating-a-proc-file-and-interfacing-with-user-space/ 
+*/
+
+static struct proc_dir_entry *ent;
+static bool csi_enc_callback_activated = false;
+#define BUFSIZE  3
+
+static ssize_t callback_status_read(struct file *file, char __user *ubuf,size_t count, loff_t *ppos) 
+{
+	char buf[BUFSIZE];
+	int len=0;
+	if(*ppos > 0 || count < BUFSIZE)  // check if this is not the first time we call read (pos>0) or the user buffer size is less than buffer size, then exit
+		return 0;
+	if (csi_enc_callback_activated) {
+		len += sprintf(buf,"1\n");
+	}else {
+		len += sprintf(buf,"0\n");
+	}
+	
+	if(copy_to_user(ubuf,buf,len))
+		return -EFAULT;
+	*ppos = len;
+	return len;
+}
+
+static ssize_t callback_status_clear(struct file *file, const char __user *ubuf,size_t count, loff_t *ppos) 
+{
+	int num,c,i;
+	char buf[BUFSIZE];
+	if(*ppos > 0 || count > BUFSIZE)	// check if this is not the first time we call read (pos>0) or the user buffer size is larger than our buffer, then exit
+		return -EFAULT;
+	if(copy_from_user(buf,ubuf,count))
+		return -EFAULT;
+	num = sscanf(buf,"%d",&i);
+	if(num != 1 || i != 0)	// if no input was found, or if the input was not "0", then exit
+		return -EFAULT;
+	else
+		csi_enc_callback_activated = false; 
+	c = strlen(buf);
+	*ppos = c;
+	return c;
+}
+
+static struct file_operations csi_enc_ops = 
+{
+	.owner = THIS_MODULE,
+	.read = callback_status_read,
+	.write = callback_status_clear,
+};
+
+/* END CSI encoder callback status */
+/*************************************************/
+
+
+
+
 static void directly_display(cam_data *cam)
 {
 	++buffer_num;
@@ -148,6 +219,8 @@ static void directly_display(cam_data *cam)
  */
 static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
+	csi_enc_callback_activated = true;	// JTS - set true when this ISR is called; read in user space
+
 	cam_data *cam = (cam_data *) dev_id;
 //	pr_err("csi_enc_callback: csi_enc_callback inside.\n");
 
@@ -375,7 +448,7 @@ static int oldi_reset(void)
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0041, 0x49);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x0042, 0x00);
 	retval = ub9xx_write_reg(UB947_ADDR, 0x004f, 0x40);		//Set OLDI	
-	return;
+	return retval;
 }
 
 /*!
@@ -704,8 +777,6 @@ static int csi_enc_disabling_tasks(void *private)
  */
 static int csi_enc_enable_csi(void *private)
 {
-	u8 RegVal= 0;
-	int retval = 0;											//JAD
 	int i = 0;
 	
 	cam_data *cam = (cam_data *) private;
@@ -805,6 +876,7 @@ EXPORT_SYMBOL(csi_enc_deselect);
  */
 __init int csi_enc_init(void)
 {
+	ent=proc_create("csi-irq",0666,NULL,&csi_enc_ops);	// JTS - support the proc entry for reading IRQ status
 	return 0;
 }
 
@@ -814,6 +886,7 @@ __init int csi_enc_init(void)
  */
 void __exit csi_enc_exit(void)
 {
+	proc_remove(ent);	// JTS - support the proc entry for reading IRQ status
 }
 
 module_init(csi_enc_init);
