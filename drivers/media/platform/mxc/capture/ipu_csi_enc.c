@@ -137,7 +137,7 @@ static void dbg_measure_in_fps()
 * All other writes will fail. 
 *  
 * There is an entry in the csi_enc_init() and 
-* csi_enc_exit() functions to support this. 
+* csi_enc_exit() functions to support this proc pseudo file. 
 *  
 * Example of how to do this: 
 * https://devarea.com/linux-kernel-development-creating-a-proc-file-and-interfacing-with-user-space/ 
@@ -219,7 +219,7 @@ static void directly_display(cam_data *cam)
  */
 static irqreturn_t csi_enc_callback(int irq, void *dev_id)
 {
-	csi_enc_callback_activated = true;	// JTS - set true when this ISR is called; read in user space
+	csi_enc_callback_activated = true;	// JTS - set true when this ISR is called; can be read in user space
 
 	cam_data *cam = (cam_data *) dev_id;
 //	pr_err("csi_enc_callback: csi_enc_callback inside.\n");
@@ -698,8 +698,8 @@ static int csi_enc_enabling_tasks(void *private)
 	cam->dummy_frame.buffer.m.offset = cam->dummy_frame.paddress;
 
 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
-pr_err("before ipu clear() \n");
 	ipu_clear_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+	csi_enc_callback_activated = false;		// JTS - clear this to indicate no EOF interrupts have happened.
 	err = ipu_request_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF,
 			      csi_enc_callback, 0, "Mxc Camera", cam);
 	if (err != 0) {
@@ -809,10 +809,10 @@ static int csi_enc_disable_csi(void *private)
 	/* free csi eof irq firstly.
 	 * when disable csi, wait for idmac eof.
 	 * it requests eof irq again */
-	 pr_err("before the ipu_free_irq \n");
-	 	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
+	ipu_getstatus(cam->ipu, IPU_IRQ_CSI0_OUT_EOF);
 
-    ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam); 
+	ipu_free_irq(cam->ipu, IPU_IRQ_CSI0_OUT_EOF, cam);
+	csi_enc_callback_activated = false;		// JTS - clear this to indicate no EOF interrupts have happened.
 	pr_err("++++ %s\n", __func__);
 	dbg_show_in_fps();
 
@@ -876,7 +876,7 @@ EXPORT_SYMBOL(csi_enc_deselect);
  */
 __init int csi_enc_init(void)
 {
-	ent=proc_create("csi-irq",0666,NULL,&csi_enc_ops);	// JTS - support the proc entry for reading IRQ status
+	ent=proc_create("csi-irq",0666,NULL,&csi_enc_ops);	// JTS - support the proc entry for reading IRQ callback status
 	return 0;
 }
 
@@ -886,7 +886,7 @@ __init int csi_enc_init(void)
  */
 void __exit csi_enc_exit(void)
 {
-	proc_remove(ent);	// JTS - support the proc entry for reading IRQ status
+	proc_remove(ent);	// JTS - support the proc entry for reading IRQ callback status
 }
 
 module_init(csi_enc_init);
